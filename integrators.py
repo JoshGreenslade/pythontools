@@ -9,11 +9,11 @@ derivitive.
 
 
 from typing import Callable, List
-import math
+import numpy as np
 
 
 def euler(dydt: Callable,
-          y0: float,
+          y0: List[float],
           t_span: List,
           n_steps: int = None,
           step_size: float = None):
@@ -31,28 +31,28 @@ def euler(dydt: Callable,
     if step_size is None:
         step_size = (t_end - t_start)/n_steps
     elif n_steps is None:
-        n_steps = math.ceil((t_end - t_start)/step_size)
+        n_steps = np.ceil((t_end - t_start)/step_size)
 
     t = t_start
     y = y0
-    t_array = [t]
-    y_array = [y]
+    t_array = np.array(t)
+    y_array = np.array(y)
 
-    for i in range(n_steps):
+    for _ in np.arange(n_steps):
         t_new = t+step_size
-        y_new = y + step_size*dydt(y)
-        t_array.append(t_new)
-        y_array.append(y_new)
+        y_new = y + step_size * np.array(dydt(t, y))
+        t_array = np.append(t_array, t_new)
+        y_array = np.vstack([y_array, y_new])
         t = t_new
         y = y_new
 
     return (t_array, y_array)
 
 
-def dfdt(t):
-    return t
+def dfdt(t, y):
+    return [y[1], -9.81]
 
 
-f0 = 1
+f0 = [0, 50]
 
 print(euler(dfdt, f0, t_span=[0, 5], step_size=1))
