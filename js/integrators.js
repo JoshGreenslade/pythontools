@@ -1,12 +1,27 @@
-const arrayColumn = (arr, n) => arr.map(x => x[n]);
+// First-order ODE integrators
+
+// An Ordinary Differential Equation is one where the function 
+// only contains one independent variable and its derivitives.
+// The order of the ODE is given by the highest order in the
+// derivitive.
+
+// =============================
+// ===== Utility Functions =====
+// =============================
 
 function addVector(a, b){
+  // Add two compatible vectors together element-wise
   return a.map((e,i) => e + b[i]);
 }
 
 function multiplyVectorByScalar(scalar, v) {
+  // Multiply a vector by a scalar
   return v.map(x => x * scalar)
 }
+
+// =============================
+// ======== Integrators ========
+// =============================
 
 export default function euler({
   dydt,             // Callable
@@ -15,8 +30,18 @@ export default function euler({
   step_size = null, // Float
   n_steps = null    // Int
   }) {
+  // A first-order ODE solver using Eulers method
   // 
-  // A first-order ODE solver
+  // Example
+  // ------
+  // 
+  // A particle falling under gravity in 1D.
+  // 
+  // euler({
+  //   dydt: (t, y) => [y[1], -9.81],
+  //   y0: [0, 20], 
+  //   t_span: [0, 5],
+  //   n_steps: 5})
 
   let t_start, t_end, step, y_new, t_new;
 
@@ -51,10 +76,3 @@ export default function euler({
   return [t_array, y_array]
 
 }
-
-console.log(euler({
-  dydt: (t, y) => [y[1], -9.81],
-  y0: [0, 20], 
-  t_span: [0, 5],
-  n_steps: 5})
-)
