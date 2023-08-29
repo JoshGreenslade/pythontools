@@ -37,5 +37,13 @@ const yAxis = svg.append('g')
 xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
 yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
 
+xAxis.transition()
+  .attr('opacity', 1)
+  .duration(1000)
+
+yAxis.transition()
+  .attr('opacity', 1)
+  .duration(1000)
+
 
 console.log('hello')
