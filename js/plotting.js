@@ -1,51 +1,24 @@
-function test() {
-    // Declare the chart dimensions and margins.
-    const width = 640;
-    const height = 400;
-    const marginTop = 20;
-    const marginRight = 20;
-    const marginBottom = 30;
-    const marginLeft = 40;
-  
-    // Declare the x (horizontal position) scale.
-    const x = d3.scaleLinear()
-        .domain([0, 100])
-        .range([marginLeft, width - marginRight]);
-  
-    // Declare the y (vertical position) scale.
-    const y = d3.scaleLinear()
-        .domain([0, 100])
-        .range([height - marginBottom, marginTop]);
-  
-    // Create the SVG container.
-    const svg = d3.create("svg")
-        .attr("width", width)
-        .attr("height", height);
+const aspect_ratio = 8.0/3.0
+const height= 300
+const width= height * aspect_ratio
 
-    const axisStyle = [
-      "color: hsl(270, 50%, 50%)",
-      "stroke-width: 10px"
-    ]
-  
-    // Add the x-axis.
-    svg.append("g")
-        .attr("transform", `translate(0,${height - marginBottom})`)
-        .call(d3.axisBottom(x)
-          .tickValues([])
-          .tickSize(0))
-        .attr("style", axisStyle.join(';'))
-  
-    // Add the y-axis.
-    svg.append("g")
-        .attr("transform", `translate(${marginLeft},0)`)
-        .call(d3.axisLeft(y)
-        .tickValues([])
-        .tickSize(0))
-      .attr("style", axisStyle.join(';'))  
+var svg = d3.select(".area")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height)
+  .style("background-color","red")
 
-    // Return the SVG element.
-    return svg.node();
-}
+var x = d3.scaleLinear()
+  .domain([0, width])
+  .range([0, width])
 
-const hello = test()
-document.querySelector(".d3_test").append(hello)
+var y = d3.scaleLinear()
+  .domain([0, height])
+  .range([0, height])
+
+svg.append('g')
+  .attr("transform", `translate(0, ${height})`)
+  .call(d3.axisTop(x));
+svg.append('g').call(d3.axisRight(y));
+
+console.log('hello')
