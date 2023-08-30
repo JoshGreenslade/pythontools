@@ -4,7 +4,7 @@ const width= height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
 const markerSize = 10
-const backgroundColour = "hsl(0, 0%, 90%)"
+const backgroundColour = "hsl(0, 00%, 100%)"
 
 document.body.style.backgroundColor = backgroundColour
 
@@ -111,7 +111,7 @@ const path2 = lineLayer.append('path')
   .datum(data2)
   .attr("fill", "none")
   .attr("stroke", "hsl(225, 50%, 50%)")
-  .attr("stroke-width", 3)
+  .attr("stroke-width", 1)
   .attr("d", line)
   .transition()
   .attr('opacity', 1)
@@ -142,5 +142,6 @@ let markers2 = markerLayer.selectAll("markers2")
     .append("circle")
 setMarkerAttributes(
   markers2,
-  "hsl(225, 50%, 50%)"
+  "hsl(225, 50%, 50%)",
+  5
   )
