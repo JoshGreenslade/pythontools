@@ -164,13 +164,20 @@ class Line {
 
   update({ data = null,
     color = null,
-    strokeWidth = null }) {
+    strokeWidth = null,
+    markerSize = null
+  }) {
     if (data !== null) {
       this.data = data
     }
     if (strokeWidth !== null) {
       this.strokeWidth = strokeWidth
       this.pathSelection.attr("stroke-width", this.strokeWidth)
+    }
+    if (markerSize !== null) {
+      this.markerSize = markerSize
+      this.negMarkerSelection.attr("r", 1.5 * this.markerSize)
+      this.markerSelection.attr("r", this.markerSize)
     }
     if (color !== null) {
       this.color = color

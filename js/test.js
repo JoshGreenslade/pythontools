@@ -50,7 +50,7 @@ var intervalId = window.setInterval(function () {
     line1.update({ data: data, strokeWidth: 0 })
     // line2.update({ data: data2 })
     if (result[1][1][0] > 100) {
-        line1.update({ strokeWidth: 1 })
+        line1.update({ strokeWidth: 10, markerSize: 0 })
         clearInterval(intervalId)
     }
     t += step
