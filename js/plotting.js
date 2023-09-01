@@ -3,9 +3,9 @@ const height = 500
 const width = height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
-const markerSize = 10
+
 const backgroundColour = "hsl(0, 0%, 20%)"
-const fadeInTime = 50
+const fadeInTime = 100
 
 // document.body.style.backgroundColor = backgroundColour
 
@@ -64,7 +64,9 @@ class Line {
   constructor(lineLayer, {
     data,
     color = null,
-    marker = null
+    strokeWidth = null,
+    marker = null,
+    markerSize = null
   }) {
     this.lineLayer = lineLayer
     this.lineGroup = lineLayer.lineGroup
@@ -72,7 +74,9 @@ class Line {
     this.markerGroup = lineLayer.markerGroup
     this.data = data
     this.color = color || this.generateColor()
+    this.strokeWidth = strokeWidth || 1
     this.marker = marker || 'circle'
+    this.markerSize = markerSize || 10
     this.id = `LineID-${Math.random().toString(36).substr(2, 9)}`;  // Generating a random ID for the line
 
     this.draw()
@@ -97,11 +101,13 @@ class Line {
       .append('path')
       .attr('id', this.id)
       .attr('fill', 'none')
-      .attr('stroke', this.color)
+      .attr('stroke', `hsl(${this.lineLayer.currentHue}, 50%, 50%)`)
+      .attr('stroke-width', this.strokeWidth)
       .attr('d', d3.line()
         .x(d => this.lineLayer.gridLayer.xScale(d[0]))
         .y(d => this.lineLayer.gridLayer.yScale(d[1]))
       )
+
 
     this.pathSelection.exit().remove()
   }
@@ -120,10 +126,10 @@ class Line {
       .attr("id", negativeMarkerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-      .attr("r", markerSize * 1.5)
+      .attr("r", this.markerSize * 1.5)
       .attr("fill", document.body.style.backgroundColor)
       .style("opacity", 0)
-      .transition().duration(fadeInTime).style("opacity", 1);;
+      .transition().duration(fadeInTime).style("opacity", 1);
 
     this.negMarkerSelection.exit().remove()
   }
@@ -142,7 +148,7 @@ class Line {
       .attr("id", markerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-      .attr("r", markerSize)
+      .attr("r", this.markerSize)
       .attr("fill", this.color)
       .style("opacity", 0)
       .transition().duration(fadeInTime).style("opacity", 1);
@@ -156,9 +162,15 @@ class Line {
     this._drawMarker()
   };
 
-  update({ data = null, color = null }) {
+  update({ data = null,
+    color = null,
+    strokeWidth = null }) {
     if (data !== null) {
       this.data = data
+    }
+    if (strokeWidth !== null) {
+      this.strokeWidth = strokeWidth
+      this.pathSelection.attr("stroke-width", this.strokeWidth)
     }
     if (color !== null) {
       this.color = color

@@ -7,7 +7,7 @@ const width = height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
 const markerSize = 1
-const backgroundColour = "hsl(0, 0%, 20%)"
+const backgroundColour = `hsl(${Math.random() * 360}, 50%, 90%)`
 document.body.style.backgroundColor = backgroundColour
 
 
@@ -30,29 +30,29 @@ const gridLayer = createGridLayer()
 svg.call(gridLayer)
 
 const lineLayer = new LineLayer(svg, gridLayer)
-let line1 = lineLayer.add({ data: data })
-let line2 = lineLayer.add({ data: data2 })
-let line3 = lineLayer.add({ data: data2 })
+let line1 = lineLayer.add({ data: data, color: `hsl(${Math.random() * 360}, 50%, 50%)` })
 let result
 let y0 = [1]
 let t = 0
+let step = 1 / 3
 
 var intervalId = window.setInterval(function () {
     result = euler({
         dydt: (t, y) => [y],
         y0: y0,
-        t_span: [t, t + 1],
-        n_steps: 1
+        t_span: [t, t + step],
+        n_steps: 10
     })
 
     data = data.concat([[t, result[1][1][0]]]);
     data2 = data2.concat([[t, 32 - result[1][1][0]]]);
     y0 = result[1].slice(-1)[0];
-    line1.update({ data: data })
-    line2.update({ data: data2 })
+    line1.update({ data: data, strokeWidth: 0 })
+    // line2.update({ data: data2 })
     if (result[1][1][0] > 100) {
+        line1.update({ strokeWidth: 1 })
         clearInterval(intervalId)
     }
-    t += 1
+    t += step
     console.log(result)
-}, 500);
+}, 300);
