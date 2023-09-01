@@ -13,6 +13,9 @@ document.body.style.backgroundColor = backgroundColour
 
 let data = [
 ]
+let data2 = [
+]
+
 
 
 var svg = d3.select(".area")
@@ -28,20 +31,28 @@ svg.call(gridLayer)
 
 const lineLayer = new LineLayer(svg, gridLayer)
 let line1 = lineLayer.add({ data: data })
+let line2 = lineLayer.add({ data: data2 })
+let line3 = lineLayer.add({ data: data2 })
 let result
-let y0 = [-1, 20]
+let y0 = [1]
 let t = 0
 
 var intervalId = window.setInterval(function () {
     result = euler({
-        dydt: (t, y) => [y[1], -9.81 * y[0] * 10],
+        dydt: (t, y) => [y],
         y0: y0,
-        t_span: [0, 1 / 60],
+        t_span: [t, t + 1],
         n_steps: 1
     })
-    t += 1 / 60
-    console.log()
+
     data = data.concat([[t, result[1][1][0]]]);
+    data2 = data2.concat([[t, 32 - result[1][1][0]]]);
     y0 = result[1].slice(-1)[0];
     line1.update({ data: data })
-}, 1);
+    line2.update({ data: data2 })
+    if (result[1][1][0] > 100) {
+        clearInterval(intervalId)
+    }
+    t += 1
+    console.log(result)
+}, 500);

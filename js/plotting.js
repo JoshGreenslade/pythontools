@@ -3,8 +3,9 @@ const height = 500
 const width = height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
-const markerSize = 1
+const markerSize = 10
 const backgroundColour = "hsl(0, 0%, 20%)"
+const fadeInTime = 50
 
 // document.body.style.backgroundColor = backgroundColour
 
@@ -16,7 +17,7 @@ export function createGridLayer() {
     .range([0, width])
 
   let y = d3.scaleLinear()
-    .domain([0, 25])
+    .domain([0, 32])
     .range([height, 0])
 
   function layer(selection) {
@@ -84,32 +85,45 @@ class Line {
 
   _drawline() {
     this.pathSelection = this.lineGroup.selectAll(`path#${this.id}`).data([this.data]);
+
+    this.pathSelection
+      .attr('d', d3.line()
+        .x(d => this.lineLayer.gridLayer.xScale(d[0]))
+        .y(d => this.lineLayer.gridLayer.yScale(d[1]))
+      )
+
     this.pathSelection
       .enter()
       .append('path')
-      .merge(this.pathSelection)
       .attr('id', this.id)
       .attr('fill', 'none')
       .attr('stroke', this.color)
       .attr('d', d3.line()
         .x(d => this.lineLayer.gridLayer.xScale(d[0]))
         .y(d => this.lineLayer.gridLayer.yScale(d[1]))
-      );
+      )
+
     this.pathSelection.exit().remove()
   }
 
   _drawNegMarker() {
     const negativeMarkerID = `negMarker${this.id}`
     this.negMarkerSelection = this.negMarkerGroup.selectAll(`circle#${negativeMarkerID}`).data(this.data);
+
+    this.negMarkerSelection
+      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
+      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
+
     this.negMarkerSelection
       .enter()
       .append("circle")
-      .merge(this.negMarkerSelection)
       .attr("id", negativeMarkerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
       .attr("r", markerSize * 1.5)
-      .attr("fill", document.body.style.backgroundColor);
+      .attr("fill", document.body.style.backgroundColor)
+      .style("opacity", 0)
+      .transition().duration(fadeInTime).style("opacity", 1);;
 
     this.negMarkerSelection.exit().remove()
   }
@@ -117,15 +131,21 @@ class Line {
   _drawMarker() {
     const markerID = `marker${this.id}`
     this.markerSelection = this.markerGroup.selectAll(`circle#${markerID}`).data(this.data);
+
+    this.markerSelection
+      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
+      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
+
     this.markerSelection
       .enter()
       .append("circle")
-      .merge(this.markerSelection)
       .attr("id", markerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
       .attr("r", markerSize)
-      .attr("fill", this.color);
+      .attr("fill", this.color)
+      .style("opacity", 0)
+      .transition().duration(fadeInTime).style("opacity", 1);
 
     this.markerSelection.exit().remove()
   }
@@ -165,47 +185,3 @@ export class LineLayer {
     return new Line(this, { data: config.data, color: config.color })
   }
 }
-
-
-// let data = [
-//   [0, 0],
-//   [1, 1],
-//   [2, 4],
-//   [3, 9],
-//   [4, 16],
-//   [5, 25]
-// ]
-
-
-// let data2 = [
-//   [0, 25],
-//   [1, 16],
-//   [2, 9],
-//   [3, 8],
-//   [4, 2],
-//   [5, 0]
-// ]
-
-// var svg = d3.select(".area")
-//   .append("svg")
-//   .attr("width", width + 2 * margin)
-//   .attr("height", height + 2 * margin)
-//   .attr("viewBox", [0, 0, width + 2 * margin, height + 2 * margin])
-//   .append("g")
-//   .attr("transform", `translate(${margin}, ${margin})`)
-
-
-// const gridLayer = createGridLayer()
-// svg.call(gridLayer)
-
-// const lineLayer = new LineLayer(svg, gridLayer)
-// line1 = lineLayer.add({ data: data2 })
-// line2 = lineLayer.add({ data: [] })
-
-// var intervalId = window.setInterval(function () {
-//   data = data.concat([[Math.random() * 5, Math.random() * 25]])
-//   if (data.length > 25) {
-//     data = data.slice(-25)
-//   }
-//   line2.update({ data: data })
-// }, 500);
