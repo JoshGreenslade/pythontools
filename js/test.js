@@ -6,17 +6,78 @@ const height = 500
 const width = height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
-const markerSize = 1
-const backgroundColour = `hsl(${Math.random() * 360}, 50%, 90%)`
+const markerSize = 0
+const backgroundColour = `hsl(0, 0%, 90%)`
 document.body.style.backgroundColor = backgroundColour
 
+const L = 1
+const gridPoints = 1000
+let x0 = 0.0;  // Initially centered at x = 0.
 
-let data = [
-]
-let data2 = [
-]
+function generate1DGrid() {
+    const dx = 2 * L / (gridPoints - 1);
+    const grid = new Array(gridPoints);
+    for(let i=0; i < gridPoints; i++) {
+        grid[i] = -L + i * dx;
+    }
+    return grid
+}
+
+function psi(x, t) {
+    const alpha = 100000;  
+    const m = 1000
+    const hbar = 1.0;
+    const N = 0.1;
+
+    if (t === 0) {
+        return math.complex(N * Math.exp(-alpha * (x-x0) * (x-x0)));
+    }
+
+    // Exponential factor 1
+    const expFactor1 = math.exp(math.complex(0, -(x-x0) * (x-x0) * m / (2 * hbar * t)));
+
+    // Exponential factor 2
+    const divisorForExp2 = math.add(1, math.complex(0, 2 * alpha * hbar * t / m));
+    const expValueForExp2 = math.divide(-alpha * (x-x0) * (x-x0), divisorForExp2);
+    const expFactor2 = math.exp(expValueForExp2);
+
+    // Combine all factors
+    const combined = math.multiply(expFactor1, expFactor2);
+    return combined
+}
+
+function gauss(x,t) {
+    const a = 1e-2
+    const hbar = 1.0
+    const m = 100
+    const pre = (a/(Math.sqrt(a*a + (hbar*t/m)**2)))**3
+    const post= Math.exp(-1*a*(x-x0)*(x-x0)/(a**2 + (hbar*t/m)**2))
+    return pre*post
+}
+
+function generateDataForTime(t) {
+    const xGrid = generate1DGrid();
+
+    // Calculate squared magnitudes for each x value
+    const squaredMagnitudes = xGrid.map(x => math.abs(gauss(x, t)) ** 2);
+
+    // Calculate the sum of these squared magnitudes
+    const sum = squaredMagnitudes.reduce((acc, val) => acc + val, 0);
+    
+    // Normalize the data by dividing each squared magnitude by the square root of the sum
+    const normalizedData = squaredMagnitudes.map(val => {
+        return val / sum });
+
+    // For plotting, you'd probably want x, val pairs:
+    const data = xGrid.map((x, index) => [x, normalizedData[index]]);
+    
+    return data;
+}
 
 
+
+let data = generateDataForTime(0);
+console.log(data)
 
 var svg = d3.select(".area")
     .append("svg")
@@ -30,29 +91,58 @@ const gridLayer = createGridLayer()
 svg.call(gridLayer)
 
 const lineLayer = new LineLayer(svg, gridLayer)
-let line1 = lineLayer.add({ data: data, color: `hsl(${Math.random() * 360}, 50%, 50%)` })
-let result
-let y0 = [1]
-let t = 0
-let step = 1 / 3
+
+let line1 = lineLayer.add({ 
+    data: data, 
+    color: `hsl(0, 50%, 50%)`,
+    strokeWidth: 5,
+    markerSize: markerSize})
+
+let t = 0.0
+let step = 0.001
+let isMouseDown = false;
+
 
 var intervalId = window.setInterval(function () {
-    result = euler({
-        dydt: (t, y) => [y],
-        y0: y0,
-        t_span: [t, t + step],
-        n_steps: 10
+    data = generateDataForTime(t);
+    line1.update({ data: data, strokeWidth: 5,})
+    t += step
+}, 10);
+
+
+d3.select("svg")
+    .on("mousedown", function() {
+        isMouseDown = true;
     })
 
-    data = data.concat([[t, result[1][1][0]]]);
-    data2 = data2.concat([[t, 32 - result[1][1][0]]]);
-    y0 = result[1].slice(-1)[0];
-    line1.update({ data: data, strokeWidth: 0 })
-    // line2.update({ data: data2 })
-    if (result[1][1][0] > 100) {
-        line1.update({ strokeWidth: 10, markerSize: 0 })
-        clearInterval(intervalId)
-    }
-    t += step
-    console.log(result)
-}, 300);
+    .on("mousemove", function(event) {
+        if (isMouseDown){
+            // Get the clicked position relative to the SVG.
+            const coords = d3.pointer(event);
+            console.log(coords)
+    
+            // Convert pixel coordinates to your domain values. 
+            const clickedX = gridLayer.xScale.invert(coords[0]);
+    
+            // Update x0 and reset t.
+            x0 = clickedX;
+            t = 0.0;
+            data = generateDataForTime(t)
+            line1.update({ data: data, strokeWidth: 5 });
+    
+            // Clear the current interval.
+            clearInterval(intervalId);
+        }
+    })
+    .on("mouseup", function() {
+        isMouseDown = false;
+        // Restart the interval function.
+        intervalId = window.setInterval(function() {
+            data = generateDataForTime(t);
+            line1.update({ data: data, strokeWidth: 5 });
+            t += step;
+        }, 10);
+    })
+    .on("mouseleave", function() {
+        isMouseDown = false;
+    })

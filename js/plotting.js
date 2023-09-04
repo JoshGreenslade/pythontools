@@ -13,11 +13,11 @@ export function createGridLayer() {
   let classAttr = "grid-layer"
 
   let x = d3.scaleLinear()
-    .domain([0, 5])
+    .domain([-1, 1])
     .range([0, width])
 
   let y = d3.scaleLinear()
-    .domain([0, 32])
+    .domain([0, 0.06])
     .range([height, 0])
 
   function layer(selection) {
@@ -54,8 +54,8 @@ export function createGridLayer() {
     return layer
   };
 
-  layer.xScale = (value) => x(value);
-  layer.yScale = (value) => y(value);
+  layer.xScale = x;
+  layer.yScale = y;
 
   return layer;
 }
@@ -76,7 +76,7 @@ class Line {
     this.color = color || this.generateColor()
     this.strokeWidth = strokeWidth || 1
     this.marker = marker || 'circle'
-    this.markerSize = markerSize || 10
+    this.markerSize = markerSize || 0
     this.id = `LineID-${Math.random().toString(36).substr(2, 9)}`;  // Generating a random ID for the line
 
     this.draw()
@@ -101,7 +101,7 @@ class Line {
       .append('path')
       .attr('id', this.id)
       .attr('fill', 'none')
-      .attr('stroke', `hsl(${this.lineLayer.currentHue}, 50%, 50%)`)
+      .attr('stroke', this.color)
       .attr('stroke-width', this.strokeWidth)
       .attr('d', d3.line()
         .x(d => this.lineLayer.gridLayer.xScale(d[0]))
