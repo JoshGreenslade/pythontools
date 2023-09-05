@@ -1,17 +1,14 @@
 import euler from './integrators.js'
-import { createGridLayer, LineLayer } from './plotting.js'
+import { GridLayer, LineLayer } from './plotting.js'
 
-const aspect_ratio = 8.0 / 3.0
-const height = 500
-const width = height * aspect_ratio
-const margin = 30
+const margin = 100
 const markerColor = "hsl(0, 50%, 50%)"
-const markerSize = 0
+const markerSize = 5
 const backgroundColour = `hsl(0, 0%, 90%)`
 document.body.style.backgroundColor = backgroundColour
 
 const L = 1
-const gridPoints = 1000
+const gridPoints = 500
 let x0 = 0.0;  // Initially centered at x = 0.
 
 function generate1DGrid() {
@@ -47,9 +44,9 @@ function psi(x, t) {
 }
 
 function gauss(x,t) {
-    const a = 1e-2
+    const a = 1e-1
     const hbar = 1.0
-    const m = 100
+    const m = 1e0
     const pre = (a/(Math.sqrt(a*a + (hbar*t/m)**2)))**3
     const post= Math.exp(-1*a*(x-x0)*(x-x0)/(a**2 + (hbar*t/m)**2))
     return pre*post
@@ -78,6 +75,9 @@ function generateDataForTime(t) {
 
 let data = generateDataForTime(0);
 console.log(data)
+const height = 500
+const aspect_ratio = 8.0 / 3.0
+const width = 500 * aspect_ratio
 
 var svg = d3.select(".area")
     .append("svg")
@@ -87,15 +87,19 @@ var svg = d3.select(".area")
     .append("g")
     .attr("transform", `translate(${margin}, ${margin})`)
 
-const gridLayer = createGridLayer()
-svg.call(gridLayer)
+const gridLayer = new GridLayer(svg, {
+    height: height,
+    yDomain: [0, 0.01],
+    yRange: [height, 0],
+    yScale: d3.scaleSqrt
+})
 
 const lineLayer = new LineLayer(svg, gridLayer)
 
 let line1 = lineLayer.add({ 
     data: data, 
-    color: `hsl(0, 50%, 50%)`,
-    strokeWidth: 5,
+    color: `hsl(-90, 50%, 50%)`,
+    strokeWidth: 1,
     markerSize: markerSize})
 
 let t = 0.0
@@ -119,7 +123,7 @@ d3.select("svg")
         if (isMouseDown){
             // Get the clicked position relative to the SVG.
             const coords = d3.pointer(event);
-            console.log(coords)
+            console.log(gridLayer.xScale(coords[1]))
     
             // Convert pixel coordinates to your domain values. 
             const clickedX = gridLayer.xScale.invert(coords[0]);
@@ -128,7 +132,7 @@ d3.select("svg")
             x0 = clickedX;
             t = 0.0;
             data = generateDataForTime(t)
-            line1.update({ data: data, strokeWidth: 5 });
+            line1.update({ data: data});
     
             // Clear the current interval.
             clearInterval(intervalId);
@@ -139,7 +143,9 @@ d3.select("svg")
         // Restart the interval function.
         intervalId = window.setInterval(function() {
             data = generateDataForTime(t);
-            line1.update({ data: data, strokeWidth: 5 });
+            line1.update({ data: data, 
+                           strokeWidth: 1,
+                           markerSize: 5 });
             t += step;
         }, 10);
     })

@@ -1,5 +1,5 @@
 const aspect_ratio = 8.0 / 3.0
-const height = 500
+const height = 250
 const width = height * aspect_ratio
 const margin = 30
 const markerColor = "hsl(0, 50%, 50%)"
@@ -9,33 +9,54 @@ const fadeInTime = 100
 
 // document.body.style.backgroundColor = backgroundColour
 
-export function createGridLayer() {
-  let classAttr = "grid-layer"
+export class GridLayer{
+  constructor(svg, {
+    height = 250,
+    aspectRatio = 8.0/3.0,
+    xScale = d3.scaleLinear,
+    xDomain = [-1, 1],
+    xRange = null,
+    yScale = d3.scaleLinear,
+    yDomain = [-1, 1],
+    yRange = null
+  } = {}) {
 
-  let x = d3.scaleLinear()
-    .domain([-1, 1])
-    .range([0, width])
+    this.svg = svg
+    this.height = height
+    this.aspectRatio = aspectRatio
+    this.width = this.height * this.aspectRatio
+    
+    if (xRange === null) {
+      xRange = [0, this.width]
+    }
+    if (yRange === null) {
+      yRange = [this.height, 0]
+    }
 
-  let y = d3.scaleLinear()
-    .domain([0, 0.06])
-    .range([height, 0])
+    this.xScale = xScale()
+      .domain(xDomain)
+      .range(xRange)
+    this.yScale = yScale()
+      .domain(yDomain)
+      .range(yRange)
+    console.log(this.svg)
 
-  function layer(selection) {
-    selection.each(function () {
+    const self = this;
+
+    this.svg.each(function () {
       let g = d3.select(this)
         .append('g')
-        .attr('class', classAttr)
 
-      var d3xAxis = d3.axisTop(x)
+      var d3xAxis = d3.axisTop(self.xScale)
         .tickValues([])
         .tickSize(0);
 
-      var d3yAxis = d3.axisLeft(y)
+      var d3yAxis = d3.axisLeft(self.yScale)
         .tickValues([])
         .tickSize(0);
 
       const xAxis = g.append('g')
-        .attr("transform", `translate(0, ${height})`)
+        .attr("transform", `translate(0, ${self.height})`)
         .call(d3xAxis)
 
       const yAxis = g.append('g')
@@ -43,21 +64,8 @@ export function createGridLayer() {
 
       xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
       yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
-
     })
   }
-
-  // Getter/Setter
-  layer.classAttr = function (value) {
-    if (!arguments.length) return classAttr;
-    classAttr = value;
-    return layer
-  };
-
-  layer.xScale = x;
-  layer.yScale = y;
-
-  return layer;
 }
 
 class Line {
