@@ -96,25 +96,35 @@ class Line {
   }
 
   _drawline() {
+    this.data.sort((a, b) => a[0] - b[0]);
     this.pathSelection = this.lineGroup.selectAll(`path#${this.id}`).data([this.data]);
 
-    this.pathSelection
-      .attr('d', d3.line()
-        .x(d => this.lineLayer.gridLayer.xScale(d[0]))
-        .y(d => this.lineLayer.gridLayer.yScale(d[1]))
-      )
+    // this.pathSelection
+    //   .enter()
+    //   .append('path')
+    //   .attr('id', this.id)
+    //   .attr('fill', this.color)
+    //   .attr('stroke', this.color)
+    //   .attr('stroke-width', this.strokeWidth)
+    //   .attr('d', d3.line()
+    //     .x(d => this.lineLayer.gridLayer.xScale(d[0]))
+    //     .y(d => this.lineLayer.gridLayer.yScale(d[1]))
+    //   )
 
     this.pathSelection
       .enter()
       .append('path')
+      .merge(this.pathSelection)
       .attr('id', this.id)
-      .attr('fill', 'none')
+      .attr('fill', this.color)
       .attr('stroke', this.color)
+      .attr('opacity', 0.9)
       .attr('stroke-width', this.strokeWidth)
-      .attr('d', d3.line()
-        .x(d => this.lineLayer.gridLayer.xScale(d[0]))
-        .y(d => this.lineLayer.gridLayer.yScale(d[1]))
-      )
+      .attr('d', d3.area()
+        .x((d) => this.lineLayer.gridLayer.xScale(d[0]))
+        .y0(this.lineLayer.gridLayer.yScale(0)) // Use -1 since your yDomain starts at -1
+        .y1((d) => this.lineLayer.gridLayer.yScale(d[1]))
+    )
 
 
     this.pathSelection.exit().remove()
@@ -204,11 +214,16 @@ export class LineLayer {
     this.lineGroup = svg.append('g')
     this.negMarkerGroup = svg.append('g')
     this.markerGroup = svg.append('g')
-
     this.currentHue = -190
   }
 
   add(config) {
-    return new Line(this, { data: config.data, color: config.color })
+    return new Line(this, { 
+      data: config.data, 
+      color: config.color,
+      strokeWidth: config.strokeWidth,
+      marker: config.marker,
+      markerSize: config.markerSize
+     })
   }
 }
