@@ -1,18 +1,27 @@
-const aspect_ratio = 8.0 / 3.0
-const height = 250
-const width = height * aspect_ratio
-const margin = 30
-const markerColor = "hsl(0, 50%, 50%)"
-
-const backgroundColour = "hsl(0, 0%, 20%)"
 const fadeInTime = 100
 
-// document.body.style.backgroundColor = backgroundColour
 
+// ==========
+// SVG
+// ==========
+
+export function createSVG(selector, width, height, margin) {
+  return d3.select(`${selector}`)
+  .append("svg")
+  .attr("width", width + 2 * margin)
+  .attr("height", height + 2 * margin)
+  .attr("viewBox", [0, 0, width + 2 * margin, height + 2 * margin])
+  .append("g")
+  .attr("transform", `translate(${margin}, ${margin})`)
+}
+
+// ==========
+// Coordinate systems
+// ==========
 export class GridLayer{
   constructor(svg, {
-    height = 250,
-    aspectRatio = 8.0/3.0,
+    height = null,
+    width = null,
     xScale = d3.scaleLinear,
     xDomain = [-1, 1],
     xRange = null,
@@ -22,10 +31,15 @@ export class GridLayer{
   } = {}) {
 
     this.svg = svg
-    this.height = height
-    this.aspectRatio = aspectRatio
-    this.width = this.height * this.aspectRatio
     
+    if (height === null) {
+      height = this.svg.node().parentNode.getAttribute("height")
+    }
+    this.height = height
+    if (width === null) {
+      width = this.svg.node().parentNode.getAttribute("width")
+    }
+    this.width = width
     if (xRange === null) {
       xRange = [0, this.width]
     }
@@ -33,13 +47,13 @@ export class GridLayer{
       yRange = [this.height, 0]
     }
 
+
     this.xScale = xScale()
       .domain(xDomain)
       .range(xRange)
     this.yScale = yScale()
       .domain(yDomain)
       .range(yRange)
-    console.log(this.svg)
 
     const self = this;
 
@@ -56,17 +70,33 @@ export class GridLayer{
         .tickSize(0);
 
       const xAxis = g.append('g')
+        .attr("class", "x-axis")
         .attr("transform", `translate(0, ${self.height})`)
         .call(d3xAxis)
 
       const yAxis = g.append('g')
+        .attr("class", "y-axis")
         .call(d3yAxis);
 
       xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
       yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
     })
   }
+
+  setAxesCenter(x, y) {
+    // Calculate the middle of the SVG using the scales
+    const xCenter = this.xScale(x);
+    const yCenter = this.yScale(y);
+
+    // Update the axes on the SVG to the calculated center
+    this.svg.selectAll('g > .x-axis').attr("transform", `translate(0, ${yCenter})`);
+    this.svg.selectAll('g > .y-axis').attr("transform", `translate(${xCenter}, 0)`);
 }
+}
+
+// ==========
+// Lines
+// ==========
 
 class Line {
   constructor(lineLayer, {
@@ -99,32 +129,32 @@ class Line {
     this.data.sort((a, b) => a[0] - b[0]);
     this.pathSelection = this.lineGroup.selectAll(`path#${this.id}`).data([this.data]);
 
-    // this.pathSelection
-    //   .enter()
-    //   .append('path')
-    //   .attr('id', this.id)
-    //   .attr('fill', this.color)
-    //   .attr('stroke', this.color)
-    //   .attr('stroke-width', this.strokeWidth)
-    //   .attr('d', d3.line()
-    //     .x(d => this.lineLayer.gridLayer.xScale(d[0]))
-    //     .y(d => this.lineLayer.gridLayer.yScale(d[1]))
-    //   )
-
     this.pathSelection
       .enter()
       .append('path')
-      .merge(this.pathSelection)
       .attr('id', this.id)
       .attr('fill', this.color)
       .attr('stroke', this.color)
-      .attr('opacity', 0.9)
       .attr('stroke-width', this.strokeWidth)
-      .attr('d', d3.area()
-        .x((d) => this.lineLayer.gridLayer.xScale(d[0]))
-        .y0(this.lineLayer.gridLayer.yScale(0)) // Use -1 since your yDomain starts at -1
-        .y1((d) => this.lineLayer.gridLayer.yScale(d[1]))
-    )
+      .attr('d', d3.line()
+        .x(d => this.lineLayer.gridLayer.xScale(d[0]))
+        .y(d => this.lineLayer.gridLayer.yScale(d[1]))
+      )
+
+    // this.pathSelection
+    //   .enter()
+    //   .append('path')
+    //   .merge(this.pathSelection)
+    //   .attr('id', this.id)
+    //   .attr('fill', this.color)
+    //   .attr('stroke', this.color)
+    //   .attr('opacity', 0.9)
+    //   .attr('stroke-width', this.strokeWidth)
+    //   .attr('d', d3.area()
+    //     .x((d) => this.lineLayer.gridLayer.xScale(d[0]))
+    //     .y0(this.lineLayer.gridLayer.yScale(0)) // Use -1 since your yDomain starts at -1
+    //     .y1((d) => this.lineLayer.gridLayer.yScale(d[1]))
+    // )
 
 
     this.pathSelection.exit().remove()
@@ -203,6 +233,18 @@ class Line {
     }
 
     this.draw()
+  }
+
+  remove() {
+    if (this.pathSelection) {
+      this.pathSelection.remove();
+    }
+    if (this.negMarkerSelection) {
+        this.negMarkerSelection.remove();
+    }
+    if (this.markerSelection) {
+        this.markerSelection.remove();
+    }
   }
 }
 

@@ -7,9 +7,9 @@ document.body.style.backgroundColor = backgroundColour
 
 
 function gauss(x,t) {
-    const a = 1e-1
+    const a = 1e-5
     const hbar = 1.0
-    const m = 1e0
+    const m = 1e1
     const pre = (a/(Math.sqrt(a*a + (hbar*t/m)**2)))**3
     const post= Math.exp(-1*a*(x-x0)*(x-x0)/(a**2 + (hbar*t/m)**2))
     return pre*post
@@ -56,7 +56,7 @@ var svg = d3.select(".area")
 
 const gridLayer = new GridLayer(svg, {
     height: height,
-    yDomain: [0, 0.01],
+    yDomain: [0, 0.015],
     yRange: [height, 0]
 })
 
@@ -64,7 +64,7 @@ const lineLayer = new LineLayer(svg, gridLayer)
 
 let line1 = lineLayer.add({ 
     data: data, 
-    color: `hsl(-90, 50%, 50%)`,
+    color: `hsl(0, 50%, 50%)`,
     strokeWidth: 0,
     markerSize: 0})
 
