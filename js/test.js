@@ -6,43 +6,12 @@ const backgroundColour = `hsl(0, 0%, 90%)`
 document.body.style.backgroundColor = backgroundColour
 
 
-
-function generate1DGrid() {
-    const dx = 2 * L / (gridPoints - 1);
-    const grid = new Array(gridPoints);
-    for (let i = 0; i < gridPoints; i++) {
-        grid[i] = -L + i * dx;
-    }
-    return grid
-}
-
-function psi(x, t) {
-    const alpha = 100000;
-    const m = 1000
-    const hbar = 1.0;
-    const N = 0.1;
-
-    if (t === 0) {
-        return math.complex(N * Math.exp(-alpha * (x - x0) * (x - x0)));
-    }
-
-    // Exponential factor 1
-    const expFactor1 = math.exp(math.complex(0, -(x - x0) * (x - x0) * m / (2 * hbar * t)));
-
-    // Exponential factor 2
-    const divisorForExp2 = math.add(1, math.complex(0, 2 * alpha * hbar * t / m));
-    const expValueForExp2 = math.divide(-alpha * (x - x0) * (x - x0), divisorForExp2);
-    const expFactor2 = math.exp(expValueForExp2);
-
-    // Combine all factors
-    const combined = math.multiply(expFactor1, expFactor2);
-    return combined
-}
-
-function gauss(x, t, { x0 = 0, a = 1e-3, m = 2e2, k0 = -0.5 } = {}) {
+function gauss(x, t) {
+    const a = 1e-5
     const hbar = 1.0
+    const m = 1e1
     const pre = (a / (Math.sqrt(a * a + (hbar * t / m) ** 2))) ** 3
-    const post = Math.exp(-1 * a * (x - x0 - k0 * t) * (x - x0 - k0 * t) / (a ** 2 + (hbar * t / m) ** 2))
+    const post = Math.exp(-1 * a * (x - x0) * (x - x0) / (a ** 2 + (hbar * t / m) ** 2))
     return pre * post
 }
 
@@ -69,11 +38,14 @@ function generateDataForTime(t) {
 
 
 
-const L = 1
-const gridPoints = 200
 const height = 500
 const aspect_ratio = 8.0 / 3.0
-const width = 500 * aspect_ratio
+const width = height * aspect_ratio
+
+const L = 1
+const gridPoints = 250
+let x0 = 0.0;  // Initially centered at x = 0.
+let data = generateDataForTime(0);
 
 let data = generateDataForTime(0);
 
@@ -87,23 +59,32 @@ var svg = d3.select(".area")
 
 const gridLayer = new GridLayer(svg, {
     height: height,
-    yDomain: [0, 0.2],
-    yRange: [height, 0],
+    yDomain: [0, 0.015],
+    yRange: [height, 0]
 })
 
 const lineLayer = new LineLayer(svg, gridLayer)
 
 let line1 = lineLayer.add({
     data: data,
-    color: `hsl(-90, 50%, 50%)`,
-    strokeWidth: 1,
-    markerSize: 3
+    color: `hsl(0, 50%, 50%)`,
+    strokeWidth: 0,
+    markerSize: 0
 })
 
 let t = 0.0
 let step = 0.001
 let isMouseDown = false;
 
+
+function generate1DGrid() {
+    const dx = 2 * L / (gridPoints - 1);
+    const grid = new Array(gridPoints);
+    for (let i = 0; i < gridPoints; i++) {
+        grid[i] = -L + i * dx;
+    }
+    return grid
+}
 
 var intervalId = window.setInterval(function () {
     data = generateDataForTime(t);
@@ -140,9 +121,7 @@ d3.select("svg")
         // Restart the interval function.
         intervalId = window.setInterval(function () {
             data = generateDataForTime(t);
-            line1.update({
-                data: data,
-            });
+            line1.update({ data: data });
             t += step;
         }, 10);
     })
