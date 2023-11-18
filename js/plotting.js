@@ -9,10 +9,10 @@ const fadeInTime = 100
 
 // document.body.style.backgroundColor = backgroundColour
 
-export class GridLayer{
+export class GridLayer {
   constructor(svg, {
     height = 250,
-    aspectRatio = 8.0/3.0,
+    aspectRatio = 8.0 / 3.0,
     xScale = d3.scaleLinear,
     xDomain = [-1, 1],
     xRange = null,
@@ -25,7 +25,7 @@ export class GridLayer{
     this.height = height
     this.aspectRatio = aspectRatio
     this.width = this.height * this.aspectRatio
-    
+
     if (xRange === null) {
       xRange = [0, this.width]
     }
@@ -209,6 +209,12 @@ export class LineLayer {
   }
 
   add(config) {
-    return new Line(this, { data: config.data, color: config.color })
+    return new Line(this, {
+      data: config.data,
+      color: config.color,
+      strokeWidth: config.strokeWidth,
+      marker: config.marker,
+      markerSize: config.markerSize
+    })
   }
 }
