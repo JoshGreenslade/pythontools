@@ -14,11 +14,10 @@ import {
     DebugPosition,
 } from './plotting.js'
 
-const margin = 100
-const backgroundColour = `hsl(0, 0%, 10%)`
+const backgroundColour = `hsl(180, 0%, 10%)`
 document.body.style.backgroundColor = backgroundColour
-
-const height = 500
+const margin = 100
+const height = 950
 const aspect_ratio = 2.0 / 1.0
 const width = height * aspect_ratio
 let data = [[0, 0]]
@@ -30,7 +29,8 @@ const gridLayer = new GridLayer(svg, {
     xDomain: [0, 1],
     xRange: [0, width],
     yDomain: [0, 1],
-    yRange: [height, 0]
+    yRange: [height, 0],
+    margin: margin
 })
 
 const lineLayer = new LineLayer(svg, gridLayer)
@@ -90,7 +90,7 @@ for (let i = 0; i < 200; i++) {
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
         strokeWidth: 0,
-        markerSize: 2 + Math.random() * 10,
+        markerSize: 2 + Math.random() * 15,
         markerShadowSize: 0
     }))
 }
