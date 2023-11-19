@@ -5,14 +5,20 @@ const fadeInTime = 100
 // SVG
 // ==========
 
-export function createSVG(selector, width, height, margin) {
-  return d3.select(`${selector}`)
+export function createSVG(selector, width, height) {
+  const svg = d3.select(`${selector}`)
     .append("svg")
-    .attr("width", width + 2 * margin)
-    .attr("height", height + 2 * margin)
-    .attr("viewBox", [0, 0, width + 2 * margin, height + 2 * margin])
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", [0, 0, width, height])
     .append("g")
-    .attr("transform", `translate(${margin}, ${margin})`)
+
+  svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", "transparent");
+
+  return svg;
 }
 
 // ==========
@@ -27,26 +33,34 @@ export class GridLayer {
     xRange = null,
     yScale = d3.scaleLinear,
     yDomain = [-1, 1],
-    yRange = null
+    yRange = null,
+    margin = 50
   } = {}) {
 
     this.svg = svg
 
     if (height === null) {
-      height = this.svg.node().parentNode.getAttribute("height")
+      height = this.svg.node().parentNode.getAttribute("height") - margin
     }
     this.height = height
     if (width === null) {
-      width = this.svg.node().parentNode.getAttribute("width")
+      width = this.svg.node().parentNode.getAttribute("width") - margin
     }
     this.width = width
     if (xRange === null) {
-      xRange = [0, this.width]
+      xRange = [0, this.width + margin]
+    }
+    else {
+      xRange = [xRange[0] + margin, xRange[1] - margin]
     }
     if (yRange === null) {
-      yRange = [this.height, 0]
+      yRange = [this.height + margin, 0]
+    }
+    else {
+      yRange = [yRange[0] - margin, yRange[1] + margin]
     }
 
+    this.margin = margin
 
     this.xScale = xScale()
       .domain(xDomain)
@@ -60,6 +74,7 @@ export class GridLayer {
     this.svg.each(function () {
       let g = d3.select(this)
         .append('g')
+        .attr("class", "axis")
 
       var d3xAxis = d3.axisTop(self.xScale)
         .tickValues([])
@@ -71,11 +86,12 @@ export class GridLayer {
 
       const xAxis = g.append('g')
         .attr("class", "x-axis")
-        .attr("transform", `translate(0, ${self.height})`)
+        .attr("transform", `translate(0, ${self.height - self.margin})`)
         .call(d3xAxis)
 
       const yAxis = g.append('g')
         .attr("class", "y-axis")
+        .attr("transform", `translate(${self.margin}, 0)`)
         .call(d3yAxis);
 
       xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
@@ -104,7 +120,8 @@ class Line {
     color = null,
     strokeWidth = null,
     marker = null,
-    markerSize = null
+    markerSize = null,
+    markerShadowSize = null
   }) {
     this.lineLayer = lineLayer
     this.lineGroup = lineLayer.lineGroup
@@ -112,9 +129,10 @@ class Line {
     this.markerGroup = lineLayer.markerGroup
     this.data = data
     this.color = color || this.generateColor()
-    this.strokeWidth = strokeWidth || 1
+    this.strokeWidth = strokeWidth || 0
     this.marker = marker || 'circle'
     this.markerSize = markerSize || 0
+    this.markerShadowSize = markerShadowSize || 1.5 * this.markerSize
     this.id = `LineID-${Math.random().toString(36).substr(2, 9)}`;  // Generating a random ID for the line
 
     this.draw()
@@ -126,36 +144,20 @@ class Line {
   }
 
   _drawline() {
-    this.data.sort((a, b) => a[0] - b[0]);
+    // this.data.sort((a, b) => a[0] - b[0]);
     this.pathSelection = this.lineGroup.selectAll(`path#${this.id}`).data([this.data]);
-
     this.pathSelection
       .enter()
       .append('path')
+      .merge(this.pathSelection)
       .attr('id', this.id)
-      .attr('fill', this.color)
       .attr('stroke', this.color)
+      .attr('fill', "none")
       .attr('stroke-width', this.strokeWidth)
       .attr('d', d3.line()
         .x(d => this.lineLayer.gridLayer.xScale(d[0]))
         .y(d => this.lineLayer.gridLayer.yScale(d[1]))
       )
-
-    // this.pathSelection
-    //   .enter()
-    //   .append('path')
-    //   .merge(this.pathSelection)
-    //   .attr('id', this.id)
-    //   .attr('fill', this.color)
-    //   .attr('stroke', this.color)
-    //   .attr('opacity', 0.9)
-    //   .attr('stroke-width', this.strokeWidth)
-    //   .attr('d', d3.area()
-    //     .x((d) => this.lineLayer.gridLayer.xScale(d[0]))
-    //     .y0(this.lineLayer.gridLayer.yScale(0)) // Use -1 since your yDomain starts at -1
-    //     .y1((d) => this.lineLayer.gridLayer.yScale(d[1]))
-    // )
-
 
     this.pathSelection.exit().remove()
   }
@@ -171,10 +173,11 @@ class Line {
     this.negMarkerSelection
       .enter()
       .append("circle")
+      .merge(this.negMarkerSelection)
       .attr("id", negativeMarkerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-      .attr("r", this.markerSize * 1.5)
+      .attr("r", this.markerShadowSize)
       .attr("fill", document.body.style.backgroundColor)
       .style("opacity", 0)
       .transition().duration(fadeInTime).style("opacity", 1);
@@ -193,6 +196,7 @@ class Line {
     this.markerSelection
       .enter()
       .append("circle")
+      .merge(this.markerSelection)
       .attr("id", markerID)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
@@ -205,12 +209,19 @@ class Line {
   }
 
   draw() {
-    this._drawline()
-    this._drawNegMarker()
-    this._drawMarker()
+    if (this.strokeWidth > 0) {
+      this._drawline()
+    }
+    if (this.markerShadowSize > 0) {
+      this._drawNegMarker()
+    }
+    if (this.markerSize > 0) {
+      this._drawMarker()
+    }
   };
 
-  update({ data = null,
+  update({
+    data = null,
     color = null,
     strokeWidth = null,
     markerSize = null
@@ -265,7 +276,29 @@ export class LineLayer {
       color: config.color,
       strokeWidth: config.strokeWidth,
       marker: config.marker,
-      markerSize: config.markerSize
+      markerSize: config.markerSize,
+      markerShadowSize: config.markerShadowSize
     })
   }
+}
+
+
+// ==========
+// Debug Utils
+// ==========
+
+
+export function DebugPosition(gridLayer) {
+  gridLayer.svg
+    .on("mousedown", function (event) {
+      // Get the clicked position relative to the SVG.
+      const coords = d3.pointer(event);
+
+      // Convert pixel coordinates to your domain values. 
+      const clickedX = gridLayer.xScale.invert(coords[0]);
+      const clickedY = gridLayer.yScale.invert(coords[1]);
+
+      // Log the output
+      console.log(`X: ${clickedX.toFixed(2)}\nY: ${clickedY.toFixed(2)}`);
+    })
 }

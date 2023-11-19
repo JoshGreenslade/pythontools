@@ -47,12 +47,3 @@ def euler(dydt: Callable,
         y = y_new
 
     return (t_array, y_array)
-
-
-def dfdt(t, y):
-    return [y[1], -9.81]
-
-
-f0 = [0, 50]
-
-print(euler(dfdt, f0, t_span=[0, 5], step_size=1))

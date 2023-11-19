@@ -1,130 +1,131 @@
-import euler from './integrators.js'
-import { GridLayer, LineLayer } from './plotting.js'
+import {
+    euler,
+    verlet
+} from './integrators.js'
+import {
+    Particle2DSystem,
+    Particle2D
+} from './physics.js'
+
+import {
+    createSVG,
+    GridLayer,
+    LineLayer,
+    DebugPosition,
+} from './plotting.js'
 
 const margin = 100
-const backgroundColour = `hsl(0, 0%, 90%)`
+const backgroundColour = `hsl(0, 0%, 10%)`
 document.body.style.backgroundColor = backgroundColour
 
-
-function gauss(x, t) {
-    const a = 1e-5
-    const hbar = 1.0
-    const m = 1e1
-    const pre = (a / (Math.sqrt(a * a + (hbar * t / m) ** 2))) ** 3
-    const post = Math.exp(-1 * a * (x - x0) * (x - x0) / (a ** 2 + (hbar * t / m) ** 2))
-    return pre * post
-}
-
-function generateDataForTime(t) {
-    const xGrid = generate1DGrid();
-
-    // Calculate squared magnitudes for each x value
-    const squaredMagnitudes = xGrid.map(x => math.abs(gauss(x, t, { x0: 0.5 }) + gauss(x, t, { x0: -0.5, a: 4e-3, m: 2e2, k0: 1.5 })) ** 2);
-
-    // Calculate the sum of these squared magnitudes
-    const sum = squaredMagnitudes.reduce((acc, val) => acc + val, 0);
-
-    // Normalize the data by dividing each squared magnitude by the square root of the sum
-    const normalizedData = squaredMagnitudes.map(val => {
-        return val / sum
-    });
-
-    // For plotting, you'd probably want x, val pairs:
-    const data = xGrid.map((x, index) => [x, normalizedData[index]]);
-
-    return data;
-}
-
-
-
-
 const height = 500
-const aspect_ratio = 8.0 / 3.0
+const aspect_ratio = 2.0 / 1.0
 const width = height * aspect_ratio
+let data = [[0, 0]]
 
-const L = 1
-const gridPoints = 250
-let x0 = 0.0;  // Initially centered at x = 0.
-let data = generateDataForTime(0);
-
-let data = generateDataForTime(0);
-
-var svg = d3.select(".area")
-    .append("svg")
-    .attr("width", width + 2 * margin)
-    .attr("height", height + 2 * margin)
-    .attr("viewBox", [0, 0, width + 2 * margin, height + 2 * margin])
-    .append("g")
-    .attr("transform", `translate(${margin}, ${margin})`)
+var svg = createSVG(".area", width, height)
 
 const gridLayer = new GridLayer(svg, {
     height: height,
-    yDomain: [0, 0.015],
+    xDomain: [0, 1],
+    xRange: [0, width],
+    yDomain: [0, 1],
     yRange: [height, 0]
 })
 
 const lineLayer = new LineLayer(svg, gridLayer)
 
-let line1 = lineLayer.add({
-    data: data,
-    color: `hsl(0, 50%, 50%)`,
-    strokeWidth: 0,
-    markerSize: 0
+
+
+// ---
+
+let dt = 0.02
+let particleManager = new Particle2DSystem({
+    gravity: 0.1
 })
 
-let t = 0.0
-let step = 0.001
-let isMouseDown = false;
+particleManager.update = (dt) => {
+    let self = particleManager
+    for (const particle of self.particles) {
+        let dydt = (t, state) => [
+            state[2],
+            state[3],
+            particle.xAcc,
+            particle.yAcc]
+        particle.update({
+            dt: dt,
+            dydt: dydt,
+            integrator: verlet
+        })
 
-
-function generate1DGrid() {
-    const dx = 2 * L / (gridPoints - 1);
-    const grid = new Array(gridPoints);
-    for (let i = 0; i < gridPoints; i++) {
-        grid[i] = -L + i * dx;
+        if (particle.y <= 0.0) {
+            // particle.y = 0.0
+            particle.yVel *= -1
+        }
+        if (particle.x <= 0.0) {
+            // particle.x = 0.0
+            particle.xVel *= -1
+        }
+        if (particle.y >= 1.0) {
+            // particle.y = 1.0
+            particle.yVel *= -1
+        }
+        if (particle.x >= 1.0) {
+            // particle.x = 1.0
+            particle.xVel *= -1
+        }
     }
-    return grid
 }
 
-var intervalId = window.setInterval(function () {
-    data = generateDataForTime(t);
-    line1.update({ data: data })
-    t += step
-}, 10);
-
-
-d3.select("svg")
-    .on("mousedown", function () {
-        isMouseDown = true;
+let lines = [];
+for (let i = 0; i < 200; i++) {
+    let particle = new Particle2D({
+        x: Math.random(),
+        y: Math.random(),
+        xVel: 0.2 * (Math.random() - 0.5),
+        yVel: 0.2 * (Math.random() - 0.5)
     })
+    particleManager.addParticle(particle)
+    lines.push(lineLayer.add({
+        data: [[particle.x, particle.y]],
+        color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
+        strokeWidth: 0,
+        markerSize: 2 + Math.random() * 10,
+        markerShadowSize: 0
+    }))
+}
+// let x = []
+// for (const particle of particleManager.particles) {
+//     x.push([particle.x, particle.y])
+// }
+// let line = lineLayer.add({
+//     data: x,
+//     color: `hsl(200, 50%, 50%)`,
+//     strokeWidth: 0,
+//     markerSize: 20
+// })
 
-    .on("mousemove", function (event) {
-        if (isMouseDown) {
-            // Get the clicked position relative to the SVG.
-            const coords = d3.pointer(event);
-
-            // Convert pixel coordinates to your domain values. 
-            const clickedX = gridLayer.xScale.invert(coords[0]);
-
-            // Update x0 and reset t.
-            x0 = clickedX;
-            t = 0.0;
-            data = generateDataForTime(t)
-            line1.update({ data: data });
-
-            // Clear the current interval.
-            clearInterval(intervalId);
-        }
-    })
-    .on("mouseup", function () {
-        isMouseDown = false;
-        // Restart the interval function.
-        intervalId = window.setInterval(function () {
-            data = generateDataForTime(t);
-            line1.update({ data: data });
-            t += step;
-        }, 10);
-    })
-    .on("mouseleave", function () {
-        isMouseDown = false;
-    })
+DebugPosition(gridLayer)
+console.log(lines)
+d3.interval(() => {
+    particleManager.update(dt)
+    let pe = 0
+    let ke = 0
+    for (let i = 0; i < particleManager.particles.length; i++) {
+        let particle = particleManager.particles[i]
+        let line = lines[i]
+        line.update({ data: [[particle.x, particle.y]] })
+        pe += particle.mass * particleManager.gravity * particle.y
+        ke += 0.5 * particle.mass * (particle.xVel ** 2 + particle.yVel ** 2)
+    }
+    console.log((pe + ke).toFixed(3))
+})
+// d3.interval(() => {
+//     particleManager.update(dt)
+//     let x = []
+//     for (let i = 0; i < particleManager.particles.length; i++) {
+//         let particle = particleManager.particles[i]
+//         x.push([particle.x, particle.y])
+//     }
+//     line.update({ data: x })
+// })
