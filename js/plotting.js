@@ -149,11 +149,11 @@ class Line {
     this.pathSelection
       .enter()
       .append('path')
-      .merge(this.pathSelection)
-      .attr('id', this.id)
-      .attr('stroke', this.color)
+      .attr('id', this.id) 
       .attr('fill', "none")
+      .attr('stroke', this.color)
       .attr('stroke-width', this.strokeWidth)
+      .merge(this.pathSelection)
       .attr('d', d3.line()
         .x(d => this.lineLayer.gridLayer.xScale(d[0]))
         .y(d => this.lineLayer.gridLayer.yScale(d[1]))
@@ -173,14 +173,12 @@ class Line {
     this.negMarkerSelection
       .enter()
       .append("circle")
-      .merge(this.negMarkerSelection)
       .attr("id", negativeMarkerID)
-      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
-      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-      .attr("r", this.markerShadowSize)
       .attr("fill", document.body.style.backgroundColor)
-      .style("opacity", 0)
-      .transition().duration(fadeInTime).style("opacity", 1);
+      .attr("r", this.markerShadowSize)
+      .merge(this.negMarkerSelection)
+      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
+      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]));
 
     this.negMarkerSelection.exit().remove()
   }
@@ -196,14 +194,12 @@ class Line {
     this.markerSelection
       .enter()
       .append("circle")
-      .merge(this.markerSelection)
       .attr("id", markerID)
-      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
-      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-      .attr("r", this.markerSize)
       .attr("fill", this.color)
-      .style("opacity", 0)
-      .transition().duration(fadeInTime).style("opacity", 1);
+      .attr("r", this.markerSize)
+      .merge(this.markerSelection)
+      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
+      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]));
 
     this.markerSelection.exit().remove()
   }
@@ -226,6 +222,7 @@ class Line {
     strokeWidth = null,
     markerSize = null
   }) {
+    
     if (data !== null) {
       this.data = data
     }
@@ -240,7 +237,7 @@ class Line {
     }
     if (color !== null) {
       this.color = color
-      this.pathSelection.attr("stroke", this.color)
+      this.markerSelection.attr("fill", this.color)
     }
 
     this.draw()

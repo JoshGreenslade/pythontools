@@ -36,10 +36,18 @@ const gridLayer = new GridLayer(svg, {
 const lineLayer = new LineLayer(svg, gridLayer)
 
 
-
 // ---
 
-let dt = 0.02
+function salpeterIMF(alpha, m_min, m_max) {
+    // Generate a random number between 0 and 1
+    const rand = Math.random();
+
+    // Inverse transform sampling for power-law distribution
+    return Math.pow((Math.pow(m_max, 1 - alpha) - Math.pow(m_min, 1 - alpha)) * rand + Math.pow(m_min, 1 - alpha), 1 / (1 - alpha));
+}
+
+let n_particles = 1000
+let dt = 0.04
 let particleManager = new Particle2DSystem({
     gravity: 0.1
 })
@@ -55,7 +63,8 @@ particleManager.update = (dt) => {
         particle.update({
             dt: dt,
             dydt: dydt,
-            integrator: verlet
+            integrator: verlet,
+            n_steps: 4
         })
 
         if (particle.y <= 0.0) {
@@ -78,20 +87,21 @@ particleManager.update = (dt) => {
 }
 
 let lines = [];
-for (let i = 0; i < 200; i++) {
+for (let i = 0; i < n_particles; i++) {
+    let size = salpeterIMF(2.35, 1, 100)
     let particle = new Particle2D({
         x: Math.random(),
         y: Math.random(),
-        xVel: 0.2 * (Math.random() - 0.5),
-        yVel: 0.2 * (Math.random() - 0.5)
+        xVel: 0.1 * (Math.random() - 0.5) / size,
+        yVel: 0.1 * (Math.random() - 0.5) / size
     })
     particleManager.addParticle(particle)
     lines.push(lineLayer.add({
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
         strokeWidth: 0,
-        markerSize: 2 + Math.random() * 15,
-        markerShadowSize: 0
+        markerSize: size ,
+        markerShadowSize: -1
     }))
 }
 // let x = []
@@ -114,11 +124,8 @@ d3.interval(() => {
     for (let i = 0; i < particleManager.particles.length; i++) {
         let particle = particleManager.particles[i]
         let line = lines[i]
-        line.update({ data: [[particle.x, particle.y]] })
-        pe += particle.mass * particleManager.gravity * particle.y
-        ke += 0.5 * particle.mass * (particle.xVel ** 2 + particle.yVel ** 2)
+        line.update({ data: [[particle.x, particle.y]]})
     }
-    console.log((pe + ke).toFixed(3))
 })
 // d3.interval(() => {
 //     particleManager.update(dt)
