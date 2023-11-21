@@ -14,7 +14,7 @@ import {
     DebugPosition,
 } from './plotting.js'
 
-const backgroundColour = `hsl(180, 0%, 10%)`
+const backgroundColour = `hsl(180, 0%, 5%)`
 document.body.style.backgroundColor = backgroundColour
 const margin = 100
 const height = 950
@@ -46,15 +46,40 @@ function salpeterIMF(alpha, m_min, m_max) {
     return Math.pow((Math.pow(m_max, 1 - alpha) - Math.pow(m_min, 1 - alpha)) * rand + Math.pow(m_min, 1 - alpha), 1 / (1 - alpha));
 }
 
-let n_particles = 1000
-let dt = 0.04
+let n_particles = 500
+let dt = 0.01
+const g = 1e-3
 let particleManager = new Particle2DSystem({
     gravity: 0.1
 })
 
+function dist(particleA, particleB) {
+    return Math.hypot(particleA.x - particleB.x, particleA.y - particleB.y)
+}
+
 particleManager.update = (dt) => {
     let self = particleManager
     for (const particle of self.particles) {
+        for (const particleb of self.particles) {
+            if (particle === particleb) {
+                continue
+            }
+
+            // if (particleb.mass < 10) {
+            //     continue
+            // }
+            let r = dist(particle, particleb)
+            if ((r < 10) && (r > 0.01)) {
+                let dy = (particle.y - particleb.y)
+                let dx = (particle.x - particleb.x)
+                let theta = Math.atan2(dy, dx)
+                particle.applyForce(
+                    -Math.cos(theta) * g * Math.log(particleb.mass) / r ** 2,
+                    -Math.sin(theta) * g * Math.log(particleb.mass) / r ** 2,
+                )
+
+            }
+        }
         let dydt = (t, state) => [
             state[2],
             state[3],
@@ -83,24 +108,41 @@ particleManager.update = (dt) => {
             // particle.x = 1.0
             particle.xVel *= -1
         }
+        if (particle.xVel > 0.1) {
+            particle.xVel = 0.1
+        }
+        if (particle.xVel < -0.1) {
+            particle.xVel = -0.1
+        }
+        if (particle.yVel > 0.1) {
+            particle.yVel = 0.1
+        }
+        if (particle.yVel < -0.1) {
+            particle.yVel = -0.1
+        }
+        particle.xVel *= 1
+        particle.yVel *= 1
     }
 }
 
 let lines = [];
 for (let i = 0; i < n_particles; i++) {
-    let size = salpeterIMF(2.35, 1, 100)
+    let size = salpeterIMF(2.35, 0.1, 10)
     let particle = new Particle2D({
+        mass: 2 ** size,
         x: Math.random(),
         y: Math.random(),
-        xVel: 0.1 * (Math.random() - 0.5) / size,
-        yVel: 0.1 * (Math.random() - 0.5) / size
+        // xVel: 0,
+        // yVel: 0
+        xVel: 0.1 * (Math.random() - 0.5) / Math.log10(size),
+        yVel: 0.1 * (Math.random() - 0.5) / Math.log10(size)
     })
     particleManager.addParticle(particle)
     lines.push(lineLayer.add({
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
         strokeWidth: 0,
-        markerSize: size ,
+        markerSize: size,
         markerShadowSize: -1
     }))
 }
@@ -124,7 +166,7 @@ d3.interval(() => {
     for (let i = 0; i < particleManager.particles.length; i++) {
         let particle = particleManager.particles[i]
         let line = lines[i]
-        line.update({ data: [[particle.x, particle.y]]})
+        line.update({ data: [[particle.x, particle.y]] })
     }
 })
 // d3.interval(() => {
