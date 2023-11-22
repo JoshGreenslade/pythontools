@@ -17,8 +17,8 @@ import {
 const backgroundColour = `hsl(180, 0%, 5%)`
 document.body.style.backgroundColor = backgroundColour
 const margin = 100
-const height = 950
-const aspect_ratio = 2.0 / 1.0
+const height = screen.height;
+const aspect_ratio = 1.0
 const width = height * aspect_ratio
 let data = [[0, 0]]
 
@@ -38,6 +38,21 @@ const lineLayer = new LineLayer(svg, gridLayer)
 
 // ---
 
+//Container for the gradients
+var defs = svg.append("defs");
+
+// //Filter for the outside glow
+// var filter = defs.append("filter")
+//     .attr("id","glow");
+// filter.append("feGaussianBlur")
+//     .attr("stdDeviation","3.5")
+//     .attr("result","coloredBlur");
+// var feMerge = filter.append("feMerge");
+// feMerge.append("feMergeNode")
+//     .attr("in","coloredBlur");
+// feMerge.append("feMergeNode")
+//     .attr("in","SourceGraphic");
+
 function salpeterIMF(alpha, m_min, m_max) {
     // Generate a random number between 0 and 1
     const rand = Math.random();
@@ -46,9 +61,11 @@ function salpeterIMF(alpha, m_min, m_max) {
     return Math.pow((Math.pow(m_max, 1 - alpha) - Math.pow(m_min, 1 - alpha)) * rand + Math.pow(m_min, 1 - alpha), 1 / (1 - alpha));
 }
 
-let n_particles = 500
-let dt = 0.01
+let n_particles = 5
+let dt = 0.001
 const g = 1e-3
+const maxA = 0.1
+const maxV = 10000
 let particleManager = new Particle2DSystem({
     gravity: 0.1
 })
@@ -60,25 +77,18 @@ function dist(particleA, particleB) {
 particleManager.update = (dt) => {
     let self = particleManager
     for (const particle of self.particles) {
-        for (const particleb of self.particles) {
-            if (particle === particleb) {
-                continue
-            }
 
-            // if (particleb.mass < 10) {
-            //     continue
-            // }
-            let r = dist(particle, particleb)
-            if ((r < 10) && (r > 0.01)) {
-                let dy = (particle.y - particleb.y)
-                let dx = (particle.x - particleb.x)
-                let theta = Math.atan2(dy, dx)
-                particle.applyForce(
-                    -Math.cos(theta) * g * Math.log(particleb.mass) / r ** 2,
-                    -Math.sin(theta) * g * Math.log(particleb.mass) / r ** 2,
-                )
-
-            }
+        if (particle.xAcc > maxA) {
+            particle.xAcc = maxA
+        }
+        if (particle.xAcc < -maxA) {
+            particle.xAcc = -maxA
+        }
+        if (particle.yAcc > maxA) {
+            particle.yAcc = maxA
+        }
+        if (particle.yAcc < -maxA) {
+            particle.yAcc = -maxA
         }
         let dydt = (t, state) => [
             state[2],
@@ -89,60 +99,62 @@ particleManager.update = (dt) => {
             dt: dt,
             dydt: dydt,
             integrator: verlet,
-            n_steps: 4
+            n_steps: 1
         })
 
-        if (particle.y <= 0.0) {
+        if (particle.y <= 0.0 + particle.radius) {
             // particle.y = 0.0
             particle.yVel *= -1
         }
-        if (particle.x <= 0.0) {
+        if (particle.x <= 0.0 + particle.radius) {
             // particle.x = 0.0
             particle.xVel *= -1
         }
-        if (particle.y >= 1.0) {
+        if (particle.y >= 1.0 - particle.radius) {
             // particle.y = 1.0
             particle.yVel *= -1
         }
-        if (particle.x >= 1.0) {
+        if (particle.x >= 1.0 - particle.radius) {
             // particle.x = 1.0
             particle.xVel *= -1
         }
-        if (particle.xVel > 0.1) {
-            particle.xVel = 0.1
+        if (particle.xVel > maxV) {
+            particle.xVel = maxV
         }
-        if (particle.xVel < -0.1) {
-            particle.xVel = -0.1
+        if (particle.xVel < -maxV) {
+            particle.xVel = -maxV
         }
-        if (particle.yVel > 0.1) {
-            particle.yVel = 0.1
+        if (particle.yVel > maxV) {
+            particle.yVel = maxV
         }
-        if (particle.yVel < -0.1) {
-            particle.yVel = -0.1
+        if (particle.yVel < -maxV) {
+            particle.yVel = -maxV
         }
         particle.xVel *= 1
         particle.yVel *= 1
     }
+    self.handleCollisions()
 }
 
 let lines = [];
 for (let i = 0; i < n_particles; i++) {
-    let size = salpeterIMF(2.35, 0.1, 10)
     let particle = new Particle2D({
-        mass: 2 ** size,
+        mass: 1,
+        radius: 0.1,
         x: Math.random(),
         y: Math.random(),
         // xVel: 0,
         // yVel: 0
-        xVel: 0.1 * (Math.random() - 0.5) / Math.log10(size),
-        yVel: 0.1 * (Math.random() - 0.5) / Math.log10(size)
+        xVel: 2*Math.random(),
+        yVel: 2*Math.random()
     })
     particleManager.addParticle(particle)
+    console.log(gridLayer.xScale(particle.radius))
     lines.push(lineLayer.add({
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
-        strokeWidth: 0,
-        markerSize: size,
+        strokeWidth: -1,
+        markerSize: gridLayer.xScale(particle.radius)/(2),
         markerShadowSize: -1
     }))
 }
@@ -158,7 +170,6 @@ for (let i = 0; i < n_particles; i++) {
 // })
 
 DebugPosition(gridLayer)
-console.log(lines)
 d3.interval(() => {
     particleManager.update(dt)
     let pe = 0

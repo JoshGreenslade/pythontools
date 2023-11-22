@@ -7,7 +7,7 @@
 // === Vectors ===
 // ===============
 
-class Matrix {
+export class Matrix {
     constructor(data) {
         this.data = data.map(row => Array.isArray(row) ? row : [row]);
         this.rows = this.data.length;
@@ -103,10 +103,8 @@ class Matrix {
         }
 
         let sum = 0;
-        console.log(this.data, matrix.data)
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.cols; j++) {
-                console.log(i, j, this.data[i][j], matrix.data[i][j])
                 sum += this.data[i][j] * matrix.data[i][j];
             }
         }
@@ -114,10 +112,9 @@ class Matrix {
     }
 }
 
-class Vector extends Matrix {
+export class Vector extends Matrix {
     constructor(data) {
         let matrix = data.map(x => [x])
-        console.log(matrix)
         super(matrix);
     }
 
@@ -141,7 +138,7 @@ class Vector extends Matrix {
     }
 
     multiply(arg) {
-        const resultMatrix = super.divide(arg)
+        const resultMatrix = super.multiply(arg)
         return new Vector(resultMatrix.data.map(row => row[0]));
     }
 
@@ -149,15 +146,3 @@ class Vector extends Matrix {
         return Math.sqrt(this.data.reduce((acc, val) => acc + val[0] * val[0], 0))
     }
 }
-
-let vx1 = new Vector([1, 0]);
-let vx2 = new Vector([0, 0]);
-let v1 = new Vector([1, 2]);
-let v2 = new Vector([2, 2]);
-let v3 = v2.subtract(v1)
-let n = v3.divide(v3.length())
-let p = 2 * (vx1.dot(n) - vx2.dot(n)) / (2)
-let w1 = vx1.subtract(n.multiply(p))
-let w2 = vx2.add(n.multiply(p))
-console.log(w1, w2)
-

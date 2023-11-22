@@ -188,15 +188,12 @@ class Line {
     this.markerSelection = this.markerGroup.selectAll(`circle#${markerID}`).data(this.data);
 
     this.markerSelection
-      .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
-      .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]))
-
-    this.markerSelection
       .enter()
       .append("circle")
       .attr("id", markerID)
       .attr("fill", this.color)
       .attr("r", this.markerSize)
+      .style("filter", this.markerSize > 10 ? "url(#glow)" : "none")
       .merge(this.markerSelection)
       .attr("cx", d => this.lineLayer.gridLayer.xScale(d[0]))
       .attr("cy", d => this.lineLayer.gridLayer.yScale(d[1]));
