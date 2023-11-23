@@ -2,6 +2,7 @@ import {
     euler,
     verlet
 } from './integrators.js'
+import { Vector } from './maths.js'
 import {
     Particle2DSystem,
     Particle2D
@@ -16,7 +17,7 @@ import {
 
 const backgroundColour = `hsl(180, 0%, 5%)`
 document.body.style.backgroundColor = backgroundColour
-const margin = 100
+const margin = 50
 const height = screen.height;
 const aspect_ratio = 1.0
 const width = height * aspect_ratio
@@ -61,7 +62,7 @@ function salpeterIMF(alpha, m_min, m_max) {
     return Math.pow((Math.pow(m_max, 1 - alpha) - Math.pow(m_min, 1 - alpha)) * rand + Math.pow(m_min, 1 - alpha), 1 / (1 - alpha));
 }
 
-let n_particles = 5
+let n_particles = 500
 let dt = 0.001
 const g = 1e-3
 const maxA = 0.1
@@ -77,19 +78,6 @@ function dist(particleA, particleB) {
 particleManager.update = (dt) => {
     let self = particleManager
     for (const particle of self.particles) {
-
-        if (particle.xAcc > maxA) {
-            particle.xAcc = maxA
-        }
-        if (particle.xAcc < -maxA) {
-            particle.xAcc = -maxA
-        }
-        if (particle.yAcc > maxA) {
-            particle.yAcc = maxA
-        }
-        if (particle.yAcc < -maxA) {
-            particle.yAcc = -maxA
-        }
         let dydt = (t, state) => [
             state[2],
             state[3],
@@ -118,74 +106,57 @@ particleManager.update = (dt) => {
             // particle.x = 1.0
             particle.xVel *= -1
         }
-        if (particle.xVel > maxV) {
-            particle.xVel = maxV
-        }
-        if (particle.xVel < -maxV) {
-            particle.xVel = -maxV
-        }
-        if (particle.yVel > maxV) {
-            particle.yVel = maxV
-        }
-        if (particle.yVel < -maxV) {
-            particle.yVel = -maxV
-        }
-        particle.xVel *= 1
-        particle.yVel *= 1
     }
     self.handleCollisions()
 }
 
 let lines = [];
+let first = true;
+let speed = 1;
 for (let i = 0; i < n_particles; i++) {
+    if (first) {
+        speed = 10
+        first = false;
+    }
+    else {
+        speed = 0 
+    }
+    let radius = 0.005
     let particle = new Particle2D({
-        mass: 1,
-        radius: 0.1,
+        mass: radius**2,
+        radius: radius,
         x: Math.random(),
         y: Math.random(),
         // xVel: 0,
         // yVel: 0
-        xVel: 2*Math.random(),
-        yVel: 2*Math.random()
+        xVel: speed,
+        yVel: speed
     })
     particleManager.addParticle(particle)
-    console.log(gridLayer.xScale(particle.radius))
     lines.push(lineLayer.add({
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
         strokeWidth: -1,
-        markerSize: gridLayer.xScale(particle.radius)/(2),
+        markerSize: radius*880,
         markerShadowSize: -1
     }))
 }
-// let x = []
-// for (const particle of particleManager.particles) {
-//     x.push([particle.x, particle.y])
-// }
-// let line = lineLayer.add({
-//     data: x,
-//     color: `hsl(200, 50%, 50%)`,
-//     strokeWidth: 0,
-//     markerSize: 20
-// })
+
 
 DebugPosition(gridLayer)
 d3.interval(() => {
     particleManager.update(dt)
     let pe = 0
     let ke = 0
+    let p = 0
     for (let i = 0; i < particleManager.particles.length; i++) {
         let particle = particleManager.particles[i]
+        let speed = 1000*(particle.xVel**2 + particle.yVel**2)
         let line = lines[i]
-        line.update({ data: [[particle.x, particle.y]] })
+        line.update({ data: [[particle.x, particle.y]],
+            color: `hsl(270, ${speed}%, 50%)` })
+        p += Math.hypot(particle.xVel, particle.yVel) * particle.mass
+        ke += 0.5 * particle.mass + (particle.xVel**2 + particle.yVel**2)
     }
+    console.log(p.toFixed(5))
 })
-// d3.interval(() => {
-//     particleManager.update(dt)
-//     let x = []
-//     for (let i = 0; i < particleManager.particles.length; i++) {
-//         let particle = particleManager.particles[i]
-//         x.push([particle.x, particle.y])
-//     }
-//     line.update({ data: x })
-// })

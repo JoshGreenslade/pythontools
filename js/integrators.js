@@ -42,7 +42,6 @@ export function euler({
   //   y0: [0, 20], 
   //   t_span: [0, 5],
   //   n_steps: 5})
-
   let t_start, t_end, step, y_new, t_new;
 
   if (step_size === null && n_steps === null ||

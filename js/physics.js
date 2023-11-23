@@ -43,31 +43,65 @@ export class Particle2DSystem {
 
                 let particleA = this.particles[i]
                 let particleB = this.particles[j]
-                const aPos = new Vector([particleA.x, particleA.y])
-                const bPos = new Vector([particleB.x, particleB.y])
-                const distanceVector = bPos.subtract(aPos)
-                const distance = distanceVector.length()
+                let dx = (particleB.x - particleA.x)
+                let dy = (particleB.y - particleA.y)
+                let dist2 = dx**2 + dy**2
 
-                if (distance/2.0 >= Math.max(particleA.radius, particleB.radius)){
+                if (dist2 >= (particleA.radius + particleB.radius)**2){
                     continue
                 }
-                console.log(distance)
+
+                // console.log(`P Before: ${
+                //     particleA.mass * Math.hypot(particleA.xVel, particleA.yVel) +
+                //     particleB.mass * Math.hypot(particleB.xVel, particleB.yVel)
+                //     }`)
+
+                const dist = Math.sqrt(dist2)
+                const norm = [dx/dist, dy/dist]
+                const tan = [-norm[1], norm[0]]
+
+                let relVelX = particleB.xVel - particleA.xVel;
+                let relVelY = particleB.yVel - particleA.yVel;
+
+                let relVelDotNorm = relVelX * norm[0] + relVelY * norm[1];
+
+                if (relVelDotNorm > 0) {
+                    continue;
+}
                 
-                const aVel = new Vector([particleA.xVel, particleA.yVel])
-                const bVel = new Vector([particleB.xVel, particleB.yVel])
-                let normalVec = distanceVector.divide(distance)
-                let momentum = 2 * (aVel.dot(normalVec) - bVel.dot(normalVec)) / (particleA.mass + particleB.mass)
-                let aFinalVel = aVel.subtract(normalVec.multiply(momentum*particleA.mass))
-                let bFinalVel = bVel.add(normalVec.multiply(momentum*particleB.mass))
-                console.log(aFinalVel, bFinalVel)
-                
-                console.log(particleA.xVel, particleA.yVel)
-                particleA.xVel = aFinalVel.data[0]
-                particleA.yVel = aFinalVel.data[1]
-                particleB.xVel = bFinalVel.data[0]
-                particleB.yVel = bFinalVel.data[1]
-                console.log(particleA.xVel, particleA.yVel)
-                console.log(" ")
+                const aVelTan = particleA.xVel * tan[0] + particleA.yVel * tan[1]
+                const bVelTan = particleB.xVel * tan[0] + particleB.yVel * tan[1]
+                let aVelNorm = particleA.xVel * norm[0] + particleA.yVel * norm[1]
+                let bVelNorm = particleB.xVel * norm[0] + particleB.yVel * norm[1]
+
+                // let aFinalVelNorm = (2*com) - aVelNorm
+                // let bFinalVelNorm = (2*com) - bVelNorm
+                let aFinalVelNorm = ((particleA.mass - particleB.mass) * aVelNorm + 2 * particleB.mass * bVelNorm) / (particleA.mass + particleB.mass);
+                let bFinalVelNorm = ((particleB.mass - particleA.mass) * bVelNorm + 2 * particleA.mass * aVelNorm) / (particleA.mass + particleB.mass);
+
+
+                particleA.xVel = tan[0] * aVelTan + norm[0] * aFinalVelNorm
+                particleA.yVel = tan[1] * aVelTan + norm[1] * aFinalVelNorm
+                particleB.xVel = tan[0] * bVelTan + norm[0] * bFinalVelNorm
+                particleB.yVel = tan[1] * bVelTan + norm[1] * bFinalVelNorm
+
+                let overlap = (particleA.radius + particleB.radius) - dist;
+                if (overlap > 0) {
+                    // Calculate the proportion of the overlap to move each particle
+                    let totalRadius = particleA.radius + particleB.radius;
+                    let moveA = (overlap * (particleB.radius / totalRadius));
+                    let moveB = (overlap * (particleA.radius / totalRadius));
+
+                    // Adjust positions to prevent overlap in the next frame
+                    particleA.x -= moveA * norm[0];
+                    particleA.y -= moveA * norm[1];
+                    particleB.x += moveB * norm[0];
+                    particleB.y += moveB * norm[1];
+                }
+                // console.log(`P After: ${
+                //     particleA.mass * Math.hypot(particleA.xVel, particleA.yVel) +
+                //     particleB.mass * Math.hypot(particleB.xVel, particleB.yVel)
+                //     }`)
 
                 
             }
