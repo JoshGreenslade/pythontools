@@ -15,7 +15,7 @@ import {
     DebugPosition,
 } from './plotting.js'
 
-const backgroundColour = `hsl(180, 0%, 5%)`
+const backgroundColour = `hsl(180, 0%, 10%)`
 document.body.style.backgroundColor = backgroundColour
 const margin = 50
 const height = screen.height;
@@ -81,8 +81,8 @@ particleManager.update = (dt) => {
         let dydt = (t, state) => [
             state[2],
             state[3],
-            particle.xAcc,
-            particle.yAcc]
+            particle.xAcc - 10*(particle.y - 0.5),
+            particle.yAcc + 10*(particle.x - 0.5)]
         particle.update({
             dt: dt,
             dydt: dydt,
@@ -106,6 +106,9 @@ particleManager.update = (dt) => {
             // particle.x = 1.0
             particle.xVel *= -1
         }
+        
+        particle.xVel *= 0.99
+        particle.yVel *= 0.99
     }
     self.handleCollisions()
 }
@@ -121,7 +124,7 @@ for (let i = 0; i < n_particles; i++) {
     else {
         speed = 0 
     }
-    let radius = 0.005
+    let radius = Math.random()*0.01
     let particle = new Particle2D({
         mass: radius**2,
         radius: radius,
@@ -148,15 +151,15 @@ d3.interval(() => {
     particleManager.update(dt)
     let pe = 0
     let ke = 0
-    let p = 0
+    let p = new Vector([0, 0])
     for (let i = 0; i < particleManager.particles.length; i++) {
         let particle = particleManager.particles[i]
         let speed = 1000*(particle.xVel**2 + particle.yVel**2)
         let line = lines[i]
         line.update({ data: [[particle.x, particle.y]],
             color: `hsl(270, ${speed}%, 50%)` })
-        p += Math.hypot(particle.xVel, particle.yVel) * particle.mass
+        p = p.add(new Vector([particle.xVel, particle.yVel]).multiply(particle.mass))
         ke += 0.5 * particle.mass + (particle.xVel**2 + particle.yVel**2)
     }
-    console.log(p.toFixed(5))
+    console.log(p.data[0][0]**2 + p.data[1][0]**2)
 })
