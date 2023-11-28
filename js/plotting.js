@@ -1,9 +1,6 @@
-const fadeInTime = 100
-
-
-// ==========
-// SVG
-// ==========
+// ============================
+// =========== SVGs ===========
+// ============================
 
 export function createSVG(selector, width, height) {
   const svg = d3.select(`${selector}`)
@@ -21,9 +18,10 @@ export function createSVG(selector, width, height) {
   return svg;
 }
 
-// ==========
-// Coordinate systems
-// ==========
+// ============================
+// ==== Coordinate Systems ====
+// ============================
+
 export class GridLayer {
   constructor(svg, {
     height = null,
@@ -94,8 +92,8 @@ export class GridLayer {
         .attr("transform", `translate(${self.margin}, 0)`)
         .call(d3yAxis);
 
-      xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
-      yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
+      xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 0px;")
+      yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 0px;")
     })
   }
 
@@ -110,9 +108,9 @@ export class GridLayer {
   }
 }
 
-// ==========
-// Lines
-// ==========
+// =============================
+// =========== Lines ===========
+// =============================
 
 class Line {
   constructor(lineLayer, {
@@ -149,7 +147,7 @@ class Line {
     this.pathSelection
       .enter()
       .append('path')
-      .attr('id', this.id) 
+      .attr('id', this.id)
       .attr('fill', "none")
       .attr('stroke', this.color)
       .attr('stroke-width', this.strokeWidth)
@@ -219,7 +217,7 @@ class Line {
     strokeWidth = null,
     markerSize = null
   }) {
-    
+
     if (data !== null) {
       this.data = data
     }

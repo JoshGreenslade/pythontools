@@ -1,36 +1,33 @@
 import {
-    euler,
     verlet
-} from './integrators.js'
-import { Vector } from './maths.js'
+} from '../integrators.js'
 import {
     Particle2DSystem,
     Particle2D
-} from './physics.js'
+} from '../physics.js'
 
 import {
     createSVG,
     GridLayer,
     LineLayer,
     DebugPosition,
-} from './plotting.js'
+} from '../plotting.js'
 
 const backgroundColour = `hsl(180, 0%, 5%)`
 document.body.style.backgroundColor = backgroundColour
-const margin = 50
-const height = screen.height * 0.9;
-const aspect_ratio = 1.0
-const width = height * aspect_ratio
-let data = [[0, 0]]
+const margin = 0
+const height = screen.height * 0.9
+const aspect_ratio = screen.width / screen.height
+const width = screen.width * 0.8
 
 var svg = createSVG(".area", width, height)
 
 const gridLayer = new GridLayer(svg, {
     height: height,
-    xDomain: [0, 1],
-    xRange: [0, width],
+    xDomain: [0, 1 * aspect_ratio],
+    xRange: [0, screen.width * 0.8],
     yDomain: [0, 1],
-    yRange: [height, 0],
+    yRange: [screen.height * 0.9, 0],
     margin: margin
 })
 
@@ -64,15 +61,12 @@ function salpeterIMF(alpha, m_min, m_max) {
 
 
 let n_particles = 1000
-let dt = 0.01
-const g = 1e1
+let dt = 0.005
+const g = 1e0
 const maxA = 999
-const maxV = 1
-const friction = 1
+const maxV = 999
 
-let particleManager = new Particle2DSystem({
-    gravity: 0.1
-})
+let particleManager = new Particle2DSystem({})
 
 function dist(particleA, particleB) {
     return Math.hypot(particleA.x - particleB.x, particleA.y - particleB.y)
@@ -86,12 +80,12 @@ particleManager.update = (dt) => {
             if (particle === particleb) {
                 continue
             }
-            if (particleb.mass < 0.0001 ** 2) {
+            if (particleb.mass < 0.0000001) {
                 continue
             }
 
             let r = dist(particle, particleb)
-            if ((r < 0.2) && (r > 0.05)) {
+            if ((r < 0.5) && (r > particleb.radius)) {
                 let dy = (particle.y - particleb.y)
                 let dx = (particle.x - particleb.x)
                 let theta = Math.atan2(dy, dx)
@@ -102,8 +96,18 @@ particleManager.update = (dt) => {
 
             }
         }
-
-
+        if (particle.xAcc > maxA / particle.mass) {
+            particle.xAcc = maxA / particle.mass
+        }
+        if (particle.xAcc < -maxA / particle.mass) {
+            particle.xAcc = -maxA / particle.mass
+        }
+        if (particle.yAcc > maxA / particle.mass) {
+            particle.yAcc = maxA / particle.mass
+        }
+        if (particle.yAcc < -maxA / particle.mass) {
+            particle.yAcc = -maxA / particle.mass
+        }
         let dydt = (t, state) => [
             state[2],
             state[3],
@@ -113,7 +117,7 @@ particleManager.update = (dt) => {
             dt: dt,
             dydt: dydt,
             integrator: verlet,
-            n_steps: 4
+            n_steps: 1
         })
 
         if (particle.y <= 0.0) {
@@ -128,21 +132,9 @@ particleManager.update = (dt) => {
             // particle.y = 1.0
             particle.yVel *= -1
         }
-        if (particle.x >= 1.0) {
+        if (particle.x >= 1 * aspect_ratio) {
             // particle.x = 1.0
             particle.xVel *= -1
-        }
-        if (particle.xAcc > maxA) {
-            particle.xAcc = maxA
-        }
-        if (particle.xAcc < -maxA) {
-            particle.xAcc = -maxA
-        }
-        if (particle.yAcc > maxA) {
-            particle.yAcc = maxA
-        }
-        if (particle.yAcc < -maxA) {
-            particle.yAcc = -maxA
         }
         if (particle.xVel > maxV) {
             particle.xVel = maxV
@@ -157,33 +149,30 @@ particleManager.update = (dt) => {
             particle.yVel = -maxV
         }
 
-        particle.xVel *= 0.999
-        particle.yVel *= 0.999
-
-
-
+        particle.xVel *= 0.9997
+        particle.yVel *= 0.9997
 
     }
-    self.handleCollisions()
+    // self.handleCollisions()
 }
 
 let lines = [];
-let first = true;
-let speed = 1;
-for (let i = 0; i < n_particles; i++) {
 
-    let radius = salpeterIMF(2.35, 0.05 / 100, 10.0 / 100)
+for (let i = 0; i < n_particles; i++) {
+    let radius = salpeterIMF(2.35, 0.03 / 100, 30.0 / 100)
     let particle = new Particle2D({
         mass: radius ** 3,
         radius: radius,
-        x: Math.random(),
+        x: Math.random() * 1 * aspect_ratio,
         y: Math.random(),
         // xVel: 0,
         // yVel: 0
-        xVel: (Math.random() - 0.5) * 0.1,
-        yVel: (Math.random() - 0.5) * 0.1,
+        // xVel: (Math.random() - 0.5) / (10000 * radius),
+        // yVel: (Math.random() - 0.5) / (10000 * radius),
+        canCollide: false
     })
     particleManager.addParticle(particle)
+
     lines.push(lineLayer.add({
         data: [[particle.x, particle.y]],
         color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
@@ -193,22 +182,13 @@ for (let i = 0; i < n_particles; i++) {
     }))
 }
 
-
-DebugPosition(gridLayer)
 d3.interval(() => {
     particleManager.update(dt)
-    let pe = 0
-    let ke = 0
-    let p = new Vector([0, 0])
     for (let i = 0; i < particleManager.particles.length; i++) {
         let particle = particleManager.particles[i]
-        let speed = 1000 * (particle.xVel ** 2 + particle.yVel ** 2)
         let line = lines[i]
         line.update({
             data: [[particle.x, particle.y]],
         })
-        p = p.add(new Vector([particle.xVel, particle.yVel]).multiply(particle.mass))
-        ke += 0.5 * particle.mass + (particle.xVel ** 2 + particle.yVel ** 2)
     }
-    console.log(p.data[0][0] ** 2 + p.data[1][0] ** 2)
 })
