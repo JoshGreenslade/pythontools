@@ -112,7 +112,7 @@ export function verlet({
 
   for (let i = 0; i < n_steps; i++) {
     let newState = new Array(state.length)
-    let accelerations = dydt(t, state)
+    let accelerations = dydt(t, state, kwargs)
 
     for (let j = 0; j < N; j++){ 
       let baseIndex = j * 4;
@@ -130,7 +130,7 @@ export function verlet({
       newState[baseIndex + 3] = vyNew;
     }
     // Recalculate accelerations with new positions
-    let newAccelerations = dydt(t + dt, newState);
+    let newAccelerations = dydt(t + dt, newState, kwargs);
 
     for (let j = 0; j < N; j++) {
       let baseIndex = j * 4;

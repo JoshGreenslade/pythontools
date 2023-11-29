@@ -54,7 +54,7 @@ function gravitationalForce(particleA, particleB) {
     ]
 }
 
-function dydt(t, extendedState) {
+function dydt(t, extendedState, kwargs) {
     // extendedState is an array containing the states of all particles
     // [x1, y1, xVel1, yVel1, x2, y2, xVel2, yVel2, ..., xN, yN, xVelN, yVelN]
 
@@ -78,10 +78,9 @@ function dydt(t, extendedState) {
                 fyTotal += fy;
             }
         }
-        let massOfParticleI = 1
-
-        let xAcc = fxTotal / massOfParticleI; // You need to know the mass of each particle
-        let yAcc = fyTotal / massOfParticleI;
+        console.log(kwargs)
+        let xAcc = fxTotal / kwargs.particles[i].mass; // You need to know the mass of each particle
+        let yAcc = fyTotal / kwargs.particles[i].mass;
 
         derivatives[baseIndex] = xVel;
         derivatives[baseIndex + 1] = yVel;
@@ -107,7 +106,10 @@ particleManager.update = (dt) => {
         dydt: dydt,
         state0: state,
         t_span: [0, dt],
-        n_steps: 10
+        n_steps: 10,
+        kwargs: {
+            particles: self.particles,
+        }
     })
     let newState = result[1].at(-1)
     for (let i = 0; i < self.particles.length; i++){
@@ -118,15 +120,16 @@ particleManager.update = (dt) => {
         particle.xVel = newState[baseIndex+2] 
         particle.yVel = newState[baseIndex+3] 
     }
+    
 }
 
 let lines = [];
 let radius = 0.1
 let dt = 0.05
-let yvel = 0.079
+let yvel = 0.001
 
 let particle = new Particle2D({
-    mass: 1,
+    mass: 10,
     radius: radius,
     x: radius,
     y: 0.5,
