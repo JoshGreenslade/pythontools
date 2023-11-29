@@ -78,11 +78,12 @@ export function euler({
 
 
 export function verlet({
-  dydt,              // Function returning [x_vel, y_vel, x_acc, y_acc]
-  state0,            // Initial state: [x_position, y_position, x_velocity, y_velocity]
+  dydt,              // Function returning [x_vel, y_vel, x_acc, y_acc]*N - where N is the number of particles
+  state0,            // Initial state: [x_position, y_position, x_velocity, y_velocity]*N
   t_span,            // Array: [start_time, end_time]
   n_steps,           // Integer
-  step_size = null   // Float
+  step_size = null,  // Float
+  kwargs = {}        // Additional Arguments
 }) {
   // A velocity Verlet integrator
   // https://en.wikipedia.org/wiki/Verlet_integration
@@ -91,6 +92,9 @@ export function verlet({
   // ------
   // 
   // A particle falling under gravity in 1D.
+  // 
+  // If dydt takes in additional arguments, they can be passed in using
+  // kwargs.
   // 
   // verlet({
   //   dydt: (t, y) => [y[1], -9.81],
