@@ -97,34 +97,52 @@ export function verlet({
   //   y0: [0, 20], 
   //   t_span: [0, 5],
   //   n_steps: 5})
-  let x, y, vx, vy;
-  let xNew, yNew, vxNew, vyNew;
-  let newState, tempState, newerState
 
   let [t_start, t_end] = t_span;
   let dt = step_size || (t_end - t_start) / n_steps;
   var t_array = [t_start];
-  var y_array = state0;
+  var y_array = [state0];
   let t = t_start;
-  let state = state0
+  let state = state0;
+  let N = state.length / 4;   // Assuming [x, y, xVel, yVel] per particle
 
   for (let i = 0; i < n_steps; i++) {
-    [x, y, vx, vy] = state
+    let newState = new Array(state.length)
+    let accelerations = dydt(t, state)
 
-    // Calculate the new state
-    newState = dydt(t, state)
-    xNew = x + vx * dt + 0.5 * newState[2] * dt * dt
-    yNew = y + vy * dt + 0.5 * newState[3] * dt * dt
-    tempState = [xNew, yNew, vx, vy]
-    newerState = dydt(t, tempState)
-    vxNew = vx + 0.5 * (newState[2] + newerState[2]) * dt
-    vyNew = vy + 0.5 * (newState[3] + newerState[3]) * dt
-    state = [xNew, yNew, vxNew, vyNew]
+    for (let j = 0; j < N; j++){ 
+      let baseIndex = j * 4;
+      let [x, y, vx, vy] = state.slice(baseIndex, baseIndex+4);
+      let [vxNew, vyNew, ax, ay] = accelerations.slice(baseIndex, baseIndex + 4);
+
+      // Update positions
+      let xNew = x + vx * dt + 0.5 * ax * dt * dt;
+      let yNew = y + vy * dt + 0.5 * ay * dt * dt;
+
+
+      newState[baseIndex] = xNew;
+      newState[baseIndex + 1] = yNew;
+      newState[baseIndex + 2] = vxNew; // These will be updated again after recalculating accelerations
+      newState[baseIndex + 3] = vyNew;
+    }
+    // Recalculate accelerations with new positions
+    let newAccelerations = dydt(t + dt, newState);
+
+    for (let j = 0; j < N; j++) {
+      let baseIndex = j * 4;
+      let [vx, vy] = state.slice(baseIndex + 2, baseIndex + 4);
+      let [axNew, ayNew] = newAccelerations.slice(baseIndex + 2, baseIndex + 4);
+
+      // Update velocities
+      newState[baseIndex + 2] = vx + 0.5 * (accelerations[baseIndex + 2] + axNew) * dt;
+      newState[baseIndex + 3] = vy + 0.5 * (accelerations[baseIndex + 3] + ayNew) * dt;
+    }
 
     // Update the output arrays and time
-    y_array.push(state)
-    t += dt
-    t_array.push(t)
+    state = newState;
+    t += dt;
+    y_array.push(state);
+    t_array.push(t);
   }
 
   return [t_array, y_array];

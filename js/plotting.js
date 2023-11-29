@@ -92,8 +92,8 @@ export class GridLayer {
         .attr("transform", `translate(${self.margin}, 0)`)
         .call(d3yAxis);
 
-      xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 0px;")
-      yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 0px;")
+      xAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
+      yAxis.attr("style", "color: hsl(0, 0%, 50%); stroke-width: 2px;")
     })
   }
 
