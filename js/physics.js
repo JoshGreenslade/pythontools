@@ -127,17 +127,17 @@ export class Particle2DSystem {
                 particleB.yVel = tan[1] * bVelTan + norm[1] * bFinalVelNorm
 
                 // Handle overlapping particles and move them apart
-                overlap = (particleA.radius + particleB.radius) - dist;
-                if (overlap > 0) {
-                    totalRadius = particleA.radius + particleB.radius;
-                    moveA = (overlap * (particleB.radius / totalRadius));
-                    moveB = (overlap * (particleA.radius / totalRadius));
+                // overlap = (particleA.radius + particleB.radius) - dist;
+                // if (overlap > 0) {
+                //     totalRadius = particleA.radius + particleB.radius;
+                //     moveA = (overlap * (particleB.radius / totalRadius));
+                //     moveB = (overlap * (particleA.radius / totalRadius));
 
-                    particleA.x -= moveA * norm[0];
-                    particleA.y -= moveA * norm[1];
-                    particleB.x += moveB * norm[0];
-                    particleB.y += moveB * norm[1];
-                }
+                //     particleA.x -= moveA * norm[0];
+                //     particleA.y -= moveA * norm[1];
+                //     particleB.x += moveB * norm[0];
+                //     particleB.y += moveB * norm[1];
+                // }
             }
         }
     }
