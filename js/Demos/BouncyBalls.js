@@ -34,7 +34,7 @@ const gridLayer = new GridLayer(svg, {
 const lineLayer = new LineLayer(svg, gridLayer)
 
 let particleManager = new Particle2DSystem({})
-let g = 1e-2
+let g = 1.0e0
 
 function dist(particleA, particleB) {
     return Math.hypot(particleA.x - particleB.x, particleA.y - particleB.y)
@@ -129,14 +129,14 @@ particleManager.update = (dt) => {
 
 let lines = [];
 let radius = 0.1
-let dt = 0.5
-let yvel = 0.01
+let dt = 0.05
+let yvel = 0.005
 
 let particle = new Particle2D({
     mass: 10,
     radius: radius,
     x: radius,
-    y: 0.0,
+    y: 0,
     xVel: 0,
     yVel: yvel,
     canCollide: true
@@ -152,12 +152,11 @@ lines.push(lineLayer.add({
 }))
 particle = new Particle2D({
     mass: 1,
-    radius: radius,
+    radius: 0.02,
     x: 1 - radius,
-    y: 0.0,
+    y: 0,
     xVel: 0,
-    yVel: yvel,
-    canCollide: true
+    yVel: yvel
 })
 particleManager.addParticle(particle)
 
@@ -165,7 +164,7 @@ lines.push(lineLayer.add({
     data: [[particle.x, particle.y]],
     color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
     strokeWidth: -1,
-    markerSize: radius * 880,
+    markerSize: 0.02 * 880,
     markerShadowSize: -1
 }))
 
