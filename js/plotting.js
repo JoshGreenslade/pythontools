@@ -97,14 +97,17 @@ export class GridLayer {
     })
   }
 
-  setAxesCenter(x, y) {
-    // Calculate the middle of the SVG using the scales
-    const xCenter = this.xScale(x);
-    const yCenter = this.yScale(y);
+  setXAxesCenter(x) {
+    const xCenter = this.yScale(x);
+    console.log(xCenter)
+    this.svg.selectAll('g > .x-axis').attr("transform", `translate(0, ${xCenter})`);
+  }
 
-    // Update the axes on the SVG to the calculated center
-    this.svg.selectAll('g > .x-axis').attr("transform", `translate(0, ${yCenter})`);
-    this.svg.selectAll('g > .y-axis').attr("transform", `translate(${xCenter}, 0)`);
+  setYAxesCenter(y) {
+    const yCenter = this.xScale(y);
+    console.log(yCenter)
+    this.svg.selectAll('g > .y-axis').attr("transform", `translate(${yCenter}, 0)`);
+
   }
 }
 

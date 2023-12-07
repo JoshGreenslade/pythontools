@@ -45,7 +45,7 @@ function gravitationalForce(particleA, particleB) {
     // Return the force as an array [fx, fy]
     let dy = (particleB[1] - particleA[1])
     let dx = (particleB[0] - particleA[0])
-    let r2 = dx**2 + dy**2
+    let r2 = dx ** 2 + dy ** 2
 
     let theta = Math.atan2(dy, dx)
     return [
@@ -54,9 +54,20 @@ function gravitationalForce(particleA, particleB) {
     ]
 }
 
-function dydt(t, extendedState, kwargs) {
+function dydt(t, state, kwargs) {
     // extendedState is an array containing the states of all particles
     // [x1, y1, xVel1, yVel1, x2, y2, xVel2, yVel2, ..., xN, yN, xVelN, yVelN]
+    kwargs.handleCollisions()
+    let extendedState = new Array(kwargs.particles.length * 4)
+    for (let i = 0; i < kwargs.particles.length; i++) {
+        let baseIndex = i * 4;
+        let particle = kwargs.particles[i]
+        extendedState[baseIndex] = particle.x
+        extendedState[baseIndex + 1] = particle.y
+        extendedState[baseIndex + 2] = particle.xVel
+        extendedState[baseIndex + 3] = particle.yVel
+    }
+    console.log(extendedState)
 
     let derivatives = new Array(extendedState.length);
     let N = extendedState.length / 4; // Number of particles
@@ -78,7 +89,6 @@ function dydt(t, extendedState, kwargs) {
                 fyTotal += fy;
             }
         }
-        console.log(kwargs)
         let xAcc = fxTotal / kwargs.particles[i].mass; // You need to know the mass of each particle
         let yAcc = fyTotal / kwargs.particles[i].mass;
 
@@ -87,54 +97,49 @@ function dydt(t, extendedState, kwargs) {
         derivatives[baseIndex + 2] = xAcc;
         derivatives[baseIndex + 3] = yAcc;
     }
-
+    console.log(derivatives)
     return derivatives;
 }
 
 particleManager.update = (dt) => {
     let self = particleManager
-    let state = new Array(self.particles.length * 4)
-    for (let i = 0; i < self.particles.length; i++){
-        let baseIndex = i * 4;
-        let particle = self.particles[i]
-        state[baseIndex] = particle.x
-        state[baseIndex+1] = particle.y
-        state[baseIndex+2] = particle.xVel
-        state[baseIndex+3] = particle.yVel
-    }
     let result = verlet({
         dydt: dydt,
-        state0: state,
+        state0: [],
         t_span: [0, dt],
-        n_steps: 10,
+        n_steps: 1,
         kwargs: {
             particles: self.particles,
+            handleCollisions: self.handleCollisions
         }
     })
     let newState = result[1].at(-1)
-    for (let i = 0; i < self.particles.length; i++){
+    console.log(result)
+    for (let i = 0; i < self.particles.length; i++) {
         let baseIndex = i * 4;
         let particle = self.particles[i]
-        particle.x = newState[baseIndex] 
-        particle.y = newState[baseIndex+1] 
-        particle.xVel = newState[baseIndex+2] 
-        particle.yVel = newState[baseIndex+3] 
+        particle.x = newState[baseIndex]
+        particle.y = newState[baseIndex + 1]
+        particle.xVel = newState[baseIndex + 2]
+        particle.yVel = newState[baseIndex + 3]
     }
-    
+    self.handleCollisions()
+
 }
 
 let lines = [];
 let radius = 0.1
-let dt = 0.05
-let yvel = 0.001
+let dt = 0.5
+let yvel = 0.01
 
 let particle = new Particle2D({
     mass: 10,
     radius: radius,
     x: radius,
-    y: 0.5,
+    y: 0.0,
     xVel: 0,
-    yVel: yvel
+    yVel: yvel,
+    canCollide: true
 })
 particleManager.addParticle(particle)
 
@@ -148,10 +153,11 @@ lines.push(lineLayer.add({
 particle = new Particle2D({
     mass: 1,
     radius: radius,
-    x: 1-radius,
-    y: 0.5,
+    x: 1 - radius,
+    y: 0.0,
     xVel: 0,
-    yVel: -yvel
+    yVel: yvel,
+    canCollide: true
 })
 particleManager.addParticle(particle)
 
@@ -200,4 +206,4 @@ d3.interval(() => {
     lines[3].update({
         data: newData
     })
-}, 1)
+}, 1000)
