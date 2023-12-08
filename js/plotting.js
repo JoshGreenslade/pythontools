@@ -18,6 +18,30 @@ export function createSVG(selector, width, height) {
   return svg;
 }
 
+export function addDefaultStyles() {
+  var style = document.createElement('style');
+  style.type = 'text/css'
+
+  var css = `
+    body,
+    html {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    mjx-container[jax="CHTML"][display="true"] {
+      display: inline !important;
+      margin: 0 !important;
+    }
+  `
+
+  style.appendChild(document.createTextNode(css));
+  document.head.appendChild(style);
+}
+
 // ============================
 // ==== Coordinate Systems ====
 // ============================
@@ -107,7 +131,63 @@ export class GridLayer {
     const yCenter = this.xScale(y);
     console.log(yCenter)
     this.svg.selectAll('g > .y-axis').attr("transform", `translate(${yCenter}, 0)`);
+  }
 
+  addXAxesLabel(text) {
+    const xLabel = this.svg.select('.x-axis')
+      .append('text')
+      .attr('text-anchor', 'start')
+      .attr('x', this.width - this.margin)
+      .attr('y', -5)
+      .attr('class', 'axis-label')
+      .style('font-family', 'serif') // Set the font to a serif family
+      .style('font-size', '20px') // Set the font size to 20px
+      .text(text)
+
+    const bbox = xLabel.node().getBBox();
+    console.log(bbox)
+    xLabel.remove();
+
+    this.svg.select('.x-axis')
+      .append('foreignObject')
+      .attr('width', bbox.width * 5)
+      .attr('height', bbox.height * 5)
+      .attr('text-anchor', 'start')
+      .attr('y', bbox.y)
+      .attr('x', bbox.x)
+      .attr('class', 'axis-label')
+      .style('font-family', 'serif') // Set the font to a serif family
+      .style('font-size', '20px') // Set the font size to 20px
+      .text(text)
+  }
+
+  addYAxesLabel(text) {
+    const yLabel = this.svg.select('.y-axis')
+      .append('text')
+      .attr('text-anchor', 'start')
+      .attr('x', 5)
+      .attr('y', this.margin)
+      .attr('class', 'axis-label')
+      .style('font-family', 'serif') // Set the font to a serif family
+      .style('font-size', '20px') // Set the font size to 20px
+      .text(text)
+
+    const bbox = yLabel.node().getBBox();
+    console.log(bbox)
+    yLabel.remove();
+
+    this.svg.select('.y-axis')
+      .append('foreignObject')
+      .attr('width', bbox.width * 5)
+      .attr('height', bbox.height * 5)
+      .attr('text-anchor', 'start')
+      .attr('color', 'hsl(0, 0%, 50%)')
+      .attr('y', bbox.y)
+      .attr('x', bbox.x)
+      .attr('class', 'axis-label')
+      .style('font-family', 'serif') // Set the font to a serif family
+      .style('font-size', '20px') // Set the font size to 20px
+      .text(text)
   }
 }
 
