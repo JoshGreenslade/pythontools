@@ -35,8 +35,15 @@ let line = lineLayer.add({
     data: [],
     color: LINECOLOR,
     strokeWidth: 1,
-    markerSize: 3,
-    markerShadowSize: 0
+    markerSize: 0,
+    markerShadowSize: -1
+})
+let line2 = lineLayer.add({
+    data: [],
+    color: `hsl(220, 50%, 50%)`,
+    strokeWidth: 1,
+    markerSize: 0,
+    markerShadowSize: -1
 })
 document.body.style.background = BACKGROUNDCOLOR;
 
@@ -49,14 +56,23 @@ const x0 = 0
 const p0 = 0.9
 const tStart = 0
 const tStep = 0.05
-const maxT = 100
+const maxT = 700
 let t = tStart
+let n = 2
+let n2 = 1
 
 function x(t) {
-    return (x0 * Math.cos(w * t) + ((p0) / (m * w)) * Math.sin(w * t))
+    return (x0 * Math.cos(w * t) + ((p0) / (m * w)) * Math.sin(w * t)) * Math.cos(n * t / Math.PI)
 }
 function p(t) {
-    return m * w * (((p0) / (m * w)) * Math.cos(w * t) - x0 * Math.sin(w * t))
+    return m * w * (((p0) / (m * w)) * Math.cos(w * t) - x0 * Math.sin(w * t)) * Math.cos(n * t / Math.PI)
+}
+
+function x2(t) {
+    return (x0 * Math.cos(w * t) + ((p0) / (m * w)) * Math.sin(w * t)) * Math.sin(n2 * t / 5)
+}
+function p2(t) {
+    return m * w * (((p0) / (m * w)) * Math.cos(w * t) - x0 * Math.sin(w * t)) * Math.cos(n2 * t / 3.1)
 }
 
 function generateValues(start, end, step) {
@@ -66,10 +82,27 @@ function generateValues(start, end, step) {
     }
     return results
 }
+function generate2Values(start, end, step) {
+    const results = [];
+    for (let t = start; t <= end; t += step) {
+        results.push([x2(t), p2(t)])
+    }
+    return results
+}
+// line.update({
+//     data: generateValues(0,
+//         200,
+//         0.002)
+// })
 
 function animate() {
     line.update({
         data: generateValues(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
+            t,
+            tStep)
+    })
+    line2.update({
+        data: generate2Values(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
             t,
             tStep)
     })
