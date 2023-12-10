@@ -121,6 +121,7 @@ export class GridLayer {
     })
   }
 
+
   setXAxesCenter(x) {
     const xCenter = this.yScale(x);
     console.log(xCenter)

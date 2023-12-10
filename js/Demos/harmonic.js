@@ -3,7 +3,7 @@ import {
     createSVG,
     addDefaultStyles,
     LineLayer
-} from './plotting.js'
+} from '../plotting.js'
 
 // =========== SETUP ==========
 
@@ -55,11 +55,11 @@ const w = 1
 const x0 = 0
 const p0 = 0.9
 const tStart = 0
-const tStep = 0.05
+const tStep = 0.1
 const maxT = 700
 let t = tStart
-let n = 2
-let n2 = 1
+let n = 0.1
+let n2 = 0
 
 function x(t) {
     return (x0 * Math.cos(w * t) + ((p0) / (m * w)) * Math.sin(w * t)) * Math.cos(n * t / Math.PI)
