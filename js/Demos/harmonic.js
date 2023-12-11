@@ -68,24 +68,10 @@ function p(t) {
     return m * w * (((p0) / (m * w)) * Math.cos(w * t) - x0 * Math.sin(w * t)) * Math.cos(n * t / Math.PI)
 }
 
-function x2(t) {
-    return (x0 * Math.cos(w * t) + ((p0) / (m * w)) * Math.sin(w * t)) * Math.sin(n2 * t / 5)
-}
-function p2(t) {
-    return m * w * (((p0) / (m * w)) * Math.cos(w * t) - x0 * Math.sin(w * t)) * Math.cos(n2 * t / 3.1)
-}
-
 function generateValues(start, end, step) {
     const results = [];
     for (let t = start; t <= end; t += step) {
         results.push([x(t), p(t)])
-    }
-    return results
-}
-function generate2Values(start, end, step) {
-    const results = [];
-    for (let t = start; t <= end; t += step) {
-        results.push([x2(t), p2(t)])
     }
     return results
 }
@@ -98,11 +84,6 @@ function generate2Values(start, end, step) {
 function animate() {
     line.update({
         data: generateValues(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
-            t,
-            tStep)
-    })
-    line2.update({
-        data: generate2Values(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
             t,
             tStep)
     })

@@ -1,3 +1,10 @@
+import {
+  get3DRotationMatrixX,
+  get3DRotationMatrixY,
+  get3DRotationMatrixZ,
+  multiplyMatrices
+} from './maths.js'
+
 // ============================
 // =========== SVGs ===========
 // ============================
@@ -60,6 +67,8 @@ export class GridLayer {
   } = {}) {
 
     this.svg = svg
+    this.XDomain = xDomain
+    this.YDomain = yDomain
 
     if (height === null) {
       height = this.svg.node().parentNode.getAttribute("height") - margin
@@ -209,7 +218,7 @@ class Line {
     this.lineGroup = lineLayer.lineGroup
     this.negMarkerGroup = lineLayer.negMarkerGroup
     this.markerGroup = lineLayer.markerGroup
-    this.data = data
+    this.data = lineLayer.transform(data)
     this.color = color || this.generateColor()
     this.strokeWidth = strokeWidth || 0
     this.marker = marker || 'circle'
@@ -303,7 +312,7 @@ class Line {
   }) {
 
     if (data !== null) {
-      this.data = data
+      this.data = this.lineLayer.transform(data)
     }
     if (strokeWidth !== null) {
       this.strokeWidth = strokeWidth
@@ -356,8 +365,147 @@ export class LineLayer {
       markerShadowSize: config.markerShadowSize
     })
   }
+
+  project3Dto2D(data) {
+    // Transforms data from 3D to 2D
+    // Can be overridden
+    const data2d = data.map((inputPoint) => {
+
+      let point = [[inputPoint[0]], [inputPoint[1]], [inputPoint[2]]];
+      // 45 degrees rotation around the X-axis
+      let rotationX = get3DRotationMatrixX(-90 * Math.PI / 180);
+      let rotatedAroundX = multiplyMatrices(rotationX, point);
+
+      // 45 degrees rotation around the Z-axis
+      let rotationZ = get3DRotationMatrixY(45 * Math.PI / 180);
+      let rotatedAroundZ = multiplyMatrices(rotationZ, rotatedAroundX);
+
+      let rotation3 = get3DRotationMatrixX(10 * Math.PI / 180);
+      let rotated3 = multiplyMatrices(rotation3, rotatedAroundZ);
+
+      return [rotated3[0][0], rotated3[1][0]];
+    })
+
+    return data2d
+  }
+
+  transform(data) {
+    // Ensure there is data
+    if (data.length === 0) {
+      return data
+    }
+    const dimensions = [data.length, data[0].length]
+    // 2D points are not transformed
+    if (dimensions[1] === 2) {
+      return data
+    }
+    // 3D points are projected down to 2D using transformData
+    else if (dimensions[1] === 3) {
+      return this.project3Dto2D(data)
+    }
+  }
 }
 
+
+// =======================================
+// ========== 3D Plotting Tools ==========
+// =======================================
+
+export class Grid {
+
+  constructor(gridLayer, lineLayer, {
+    linesPerSide = 10,
+    XExtent = gridLayer.XDomain,
+    YExtent = gridLayer.YDomain,
+    markerSize = 0,
+    markerShadowSize = 0,
+    strokeWidth = 1,
+    gridColor = `hsl(0, 0%, 50%)`
+  }) {
+    this.gridLayer = gridLayer
+    this.lineLayer = lineLayer
+    this.linesPerSide = linesPerSide
+    this.XExtent = XExtent
+    this.YExtent = YExtent
+    this.markerSize = markerSize
+    this.markerShadowSize = markerShadowSize
+    this.strokeWidth = strokeWidth
+    this.gridColor = gridColor
+    this.data = Array(this.linesPerSide ** 2).fill(1)
+      .map((_, i) => {
+        let x = this.XExtent[0] + (i % this.linesPerSide) * (this.XExtent[1] - this.XExtent[0]) / (this.linesPerSide - 1)
+        let y = this.YExtent[0] + Math.floor(i / this.linesPerSide) * (this.YExtent[1] - this.YExtent[0]) / (this.linesPerSide - 1)
+        return [x, y]
+      })
+    this._horizontalLines = []
+    this._verticalLines = []
+
+    this.draw()
+  }
+
+  draw() {
+    let horizontalLines = [];
+    let verticalLines = [];
+
+    this._horizontalLines.forEach(element => {
+      element.remove()
+    });
+    this._verticalLines.forEach(element => {
+      element.remove()
+    });
+
+    // Creating horizontal lines
+    for (let row = 0; row < this.linesPerSide; row++) {
+      let lineSegment = [];
+      for (let col = 0; col < this.linesPerSide; col++) {
+        let pointIndex = row * this.linesPerSide + col;
+        lineSegment.push(this.data[pointIndex]);
+      }
+      horizontalLines.push(lineSegment);
+    }
+
+    // Creating vertical lines
+    for (let col = 0; col < this.linesPerSide; col++) {
+      let lineSegment = [];
+      for (let row = 0; row < this.linesPerSide; row++) {
+        let pointIndex = row * this.linesPerSide + col;
+        lineSegment.push(this.data[pointIndex]);
+      }
+      verticalLines.push(lineSegment);
+    }
+
+    verticalLines.forEach(element => {
+      this.lineLayer.add({
+        data: this.lineLayer.transform(element),
+        color: this.gridColor,
+        markerSize: this.markerSize,
+        markerShadowSize: this.markerShadowSize,
+        strokeWidth: this.strokeWidth
+      })
+    });
+
+    horizontalLines.forEach(element => {
+      this.lineLayer.add({
+        data: this.lineLayer.transform(element),
+        color: this.gridColor,
+        markerSize: this.markerSize,
+        markerShadowSize: this.markerShadowSize,
+        strokeWidth: this.strokeWidth
+      })
+    });
+  }
+
+  update({
+    data = null,
+  }) {
+
+    if (data !== null) {
+      this.data = data
+    }
+
+    this.draw()
+  }
+}
 
 // ==========
 // Debug Utils

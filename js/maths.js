@@ -3,6 +3,45 @@
 // A suite of tools and utilities for mathematical
 // operations.
 
+// =========================================
+// ========== SIMPLE MATRIX TOOLS ==========
+// =========================================
+
+export function multiplyMatrices(a, b) {
+    let result = new Array(a.length).fill(0).map(row => new Array(b[0].length).fill(0));
+
+    return result.map((row, i) => {
+        return row.map((_, j) => {
+            return a[i].reduce((sum, elm, k) => sum + (elm * b[k][j]), 0)
+        });
+    });
+}
+
+export function get3DRotationMatrixX(theta) {
+    return [
+        [1, 0, 0],
+        [0, Math.cos(theta), -Math.sin(theta)],
+        [0, Math.sin(theta), Math.cos(theta)]
+    ];
+}
+
+export function get3DRotationMatrixY(theta) {
+    return [
+        [Math.cos(theta), 0, -Math.sin(theta)],
+        [0, 1, 0],
+        [Math.sin(theta), 0, Math.cos(theta)]
+    ];
+}
+
+export function get3DRotationMatrixZ(theta) {
+    return [
+        [Math.cos(theta), -Math.sin(theta), 0],
+        [Math.sin(theta), Math.cos(theta), 0],
+        [0, 0, 1]
+    ];
+}
+
+
 // =============================
 // ========= Matricies =========
 // =============================
