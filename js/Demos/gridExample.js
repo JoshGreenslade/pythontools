@@ -24,7 +24,7 @@ const XDOMAIN = [-1, 1]
 const YDOMAIN = [-1, 1]
 
 // Grid config
-const NLINESPERSIDE = 41
+const NLINESPERSIDE = 45
 
 document.body.style.backgroundColor = BACKGROUNDCOLOR
 addDefaultStyles()
@@ -49,10 +49,10 @@ const lineLayer = new LineLayer(svg, gridLayer)
 
 const grid = new Grid(gridLayer, lineLayer, {
     linesPerSide: NLINESPERSIDE,
-    markerSize: 0,
-    markerShadowSize: 0,
+    markerSize: -1,
+    markerShadowSize: -1,
     strokeWidth: 1,
-    gridColor: `hsl(180, 0%, 100%)`
+    gridColor: `hsl(0, 50%, 100%)`
 })
 
 // ==================================
@@ -60,12 +60,26 @@ const grid = new Grid(gridLayer, lineLayer, {
 // ==================================
 
 let t = 0
+let line = lineLayer.add({
+    data: [[0, Math.sin(t)]],
+    markerSize: 10
+})
+let line2 = lineLayer.add({
+    data: [[Math.sin(t), 0]],
+    markerSize: 10
+})
 
 function animate() {
-    t += 0.05
+    t += 0.025
 
     grid.update({
         data: grid.data.map(i => [i[0], i[1], Math.sin(t) * Math.exp(((-1 * i[0] ** 2) / 0.1) + ((-1 * i[1] ** 2)) / 0.1)]),
+    })
+    line.update({
+        data: [[0, Math.sin(0.58 * t), Math.sin(t) * Math.exp(((-1 * 0 ** 2) / 0.1) + ((-1 * Math.sin(0.58 * t) ** 2)) / 0.1)]],
+    })
+    line2.update({
+        data: [[Math.sin(0.58 * t), 0, Math.sin(t) * Math.exp(((-1 * 0 ** 2) / 0.1) + ((-1 * Math.sin(0.58 * t) ** 2)) / 0.1)]],
     })
 
     lineLayer.zRotation = 45 + 2 * t
