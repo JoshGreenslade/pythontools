@@ -353,6 +353,10 @@ export class LineLayer {
     this.negMarkerGroup = svg.append('g')
     this.markerGroup = svg.append('g')
     this.currentHue = -190
+
+    // 3D rotations
+    this.zRotation = 45
+    this.xRotation = 10
   }
 
   add(config) {
@@ -377,10 +381,10 @@ export class LineLayer {
       let rotatedAroundX = multiplyMatrices(rotationX, point);
 
       // 45 degrees rotation around the Z-axis
-      let rotationZ = get3DRotationMatrixY(45 * Math.PI / 180);
+      let rotationZ = get3DRotationMatrixY(this.zRotation * Math.PI / 180);
       let rotatedAroundZ = multiplyMatrices(rotationZ, rotatedAroundX);
 
-      let rotation3 = get3DRotationMatrixX(10 * Math.PI / 180);
+      let rotation3 = get3DRotationMatrixX(this.xRotation * Math.PI / 180);
       let rotated3 = multiplyMatrices(rotation3, rotatedAroundZ);
 
       return [rotated3[0][0], rotated3[1][0]];
@@ -431,29 +435,26 @@ export class Grid {
     this.markerShadowSize = markerShadowSize
     this.strokeWidth = strokeWidth
     this.gridColor = gridColor
-    this.data = Array(this.linesPerSide ** 2).fill(1)
+    this.data = this._mapLinesPerSideToGrid()
+    this._horizontalLineData = this._getHorizontalLineData()
+    this._verticalLineData = this._getVerticalLineData()
+    this._lines = []
+
+    this._createInitialLines()
+
+  }
+
+  _mapLinesPerSideToGrid() {
+    return Array(this.linesPerSide ** 2).fill(1)
       .map((_, i) => {
         let x = this.XExtent[0] + (i % this.linesPerSide) * (this.XExtent[1] - this.XExtent[0]) / (this.linesPerSide - 1)
         let y = this.YExtent[0] + Math.floor(i / this.linesPerSide) * (this.YExtent[1] - this.YExtent[0]) / (this.linesPerSide - 1)
         return [x, y]
       })
-    this._horizontalLines = []
-    this._verticalLines = []
-
-    this.draw()
   }
 
-  draw() {
+  _getHorizontalLineData() {
     let horizontalLines = [];
-    let verticalLines = [];
-
-    this._horizontalLines.forEach(element => {
-      element.remove()
-    });
-    this._verticalLines.forEach(element => {
-      element.remove()
-    });
-
     // Creating horizontal lines
     for (let row = 0; row < this.linesPerSide; row++) {
       let lineSegment = [];
@@ -461,9 +462,13 @@ export class Grid {
         let pointIndex = row * this.linesPerSide + col;
         lineSegment.push(this.data[pointIndex]);
       }
-      horizontalLines.push(lineSegment);
+      horizontalLines.push(lineSegment)
     }
+    return horizontalLines
+  }
 
+  _getVerticalLineData() {
+    let verticalLines = [];
     // Creating vertical lines
     for (let col = 0; col < this.linesPerSide; col++) {
       let lineSegment = [];
@@ -471,39 +476,58 @@ export class Grid {
         let pointIndex = row * this.linesPerSide + col;
         lineSegment.push(this.data[pointIndex]);
       }
-      verticalLines.push(lineSegment);
+      verticalLines.push(lineSegment)
     }
+    return verticalLines
+  }
 
-    verticalLines.forEach(element => {
-      this.lineLayer.add({
-        data: this.lineLayer.transform(element),
-        color: this.gridColor,
-        markerSize: this.markerSize,
-        markerShadowSize: this.markerShadowSize,
-        strokeWidth: this.strokeWidth
-      })
-    });
+  _createInitialLines() {
+    for (let i = 0; i < this.linesPerSide; i++) {
+      this._lines.push(
+        this.lineLayer.add({
+          data: this.lineLayer.transform(this._horizontalLineData[i]),
+          color: this.gridColor,
+          strokeWidth: this.strokeWidth,
+          markerSize: this.markerSize,
+          markerShadowSize: this.markerShadowSize
+        })
+      )
+      this._lines.push(
+        this.lineLayer.add({
+          data: this.lineLayer.transform(this._verticalLineData[i]),
+          color: this.gridColor,
+          strokeWidth: this.strokeWidth,
+          markerSize: this.markerSize,
+          markerShadowSize: this.markerShadowSize
+        })
+      )
+    }
+  }
 
-    horizontalLines.forEach(element => {
-      this.lineLayer.add({
-        data: this.lineLayer.transform(element),
-        color: this.gridColor,
-        markerSize: this.markerSize,
-        markerShadowSize: this.markerShadowSize,
-        strokeWidth: this.strokeWidth
+  _updateLines() {
+    this._horizontalLineData = this._getHorizontalLineData()
+    this._verticalLineData = this._getVerticalLineData()
+    for (let i = 0; i < this.linesPerSide; i++) {
+      this._lines[2 * i].update({
+        data: this.lineLayer.transform(this._horizontalLineData[i])
       })
-    });
+      this._lines[2 * i + 1].update({
+        data: this.lineLayer.transform(this._verticalLineData[i])
+      })
+    }
   }
 
   update({
     data = null,
   }) {
 
-    if (data !== null) {
-      this.data = data
+    if ((data !== null)) {
+      if (data !== null) {
+        this.data = data
+      }
+      this._updateLines()
     }
 
-    this.draw()
   }
 }
 

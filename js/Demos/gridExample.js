@@ -17,14 +17,14 @@ import {
 
 // GridLayer config
 const BACKGROUNDCOLOR = `hsl(270, 50%, 5%)`
-const HEIGHT = 800
-const WIDTH = 800
-const MARGIN = 150
+const HEIGHT = 1200
+const WIDTH = 1200
+const MARGIN = 200
 const XDOMAIN = [-1, 1]
 const YDOMAIN = [-1, 1]
 
 // Grid config
-const NLINESPERSIDE = 31
+const NLINESPERSIDE = 41
 
 document.body.style.backgroundColor = BACKGROUNDCOLOR
 addDefaultStyles()
@@ -49,20 +49,29 @@ const lineLayer = new LineLayer(svg, gridLayer)
 
 const grid = new Grid(gridLayer, lineLayer, {
     linesPerSide: NLINESPERSIDE,
-    markerSize: 1,
-    strokeWidth: 0.5,
+    markerSize: 0,
+    markerShadowSize: 0,
+    strokeWidth: 1,
     gridColor: `hsl(180, 0%, 100%)`
 })
 
+// ==================================
+// ========== General Play ==========
+// ==================================
 
+let t = 0
 
-// ========== Creating A Grid ==========
-let newData = grid.data.map((i) => [i[0], i[1], + Math.exp(-((i[0] ** 2) / 0.1 + (i[1] ** 2) / 0.1))])
-grid.update({
-    data: newData
-})
+function animate() {
+    t += 0.05
 
-newData = grid.data.map((i) => [i[0], i[1], - Math.exp(-((i[0] ** 2) / 0.1 + (i[1] ** 2) / 0.1))])
-grid.update({
-    data: newData
-})
+    grid.update({
+        data: grid.data.map(i => [i[0], i[1], Math.sin(t) * Math.exp(((-1 * i[0] ** 2) / 0.1) + ((-1 * i[1] ** 2)) / 0.1)]),
+    })
+
+    lineLayer.zRotation = 45 + 2 * t
+    lineLayer.xRotation = 10 + 4 * t
+
+    requestAnimationFrame(animate)
+};
+
+requestAnimationFrame(animate)
