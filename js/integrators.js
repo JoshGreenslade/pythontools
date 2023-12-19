@@ -114,15 +114,14 @@ export function verlet({
     let newState = new Array(state.length)
     let accelerations = dydt(t, state, kwargs)
 
-    for (let j = 0; j < N; j++){ 
+    for (let j = 0; j < N; j++) {
       let baseIndex = j * 4;
-      let [x, y, vx, vy] = state.slice(baseIndex, baseIndex+4);
+      let [x, y, vx, vy] = state.slice(baseIndex, baseIndex + 4);
       let [vxNew, vyNew, ax, ay] = accelerations.slice(baseIndex, baseIndex + 4);
 
       // Update positions
       let xNew = x + vx * dt + 0.5 * ax * dt * dt;
       let yNew = y + vy * dt + 0.5 * ay * dt * dt;
-
 
       newState[baseIndex] = xNew;
       newState[baseIndex + 1] = yNew;

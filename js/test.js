@@ -95,20 +95,40 @@ function generate2Values(start, end, step) {
 //         0.002)
 // })
 
-function animate() {
-    line.update({
-        data: generateValues(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
-            t,
-            tStep)
-    })
-    line2.update({
-        data: generate2Values(t - maxT * tStep < 0 ? 0 : t - maxT * tStep,
-            t,
-            tStep)
-    })
-    t += tStep
+//create a synth and connect it to the main output (your speakers)
 
-    requestAnimationFrame(animate)
+
+const synth = new Tone.Synth({
+    oscillator: {
+        type: "amtriangle",
+        harmonicity: 1,
+        modulationType: "sine"
+    },
+    envelope: {
+        attackCurve: "exponential",
+        attack: 0.01,
+        decay: 1,
+        sustain: 1,
+        release: 1,
+    },
+    portamento: 5
+}).toDestination();
+
+let chords = ["A1", "C2", "D2", "E2", "G2", "A2", "C3"];
+var idx = Math.floor(Math.random() * chords.length);
+const playNote = () => {
+    var next = Math.random() > 0.5 ? 0 : Math.random() > 0.5 ? -1 : 1
+    idx += next
+    if (idx >= chords.length) {
+        idx = 0
+    }
+    if (idx < 0) {
+        idx = chords.length - 1
+    }
+    var randomAnswer = chords[idx]
+    console.log(randomAnswer)
+    synth.triggerAttackRelease(randomAnswer, 0.2);
 }
 
-requestAnimationFrame(animate)
+setInterval(playNote, 200);
+
