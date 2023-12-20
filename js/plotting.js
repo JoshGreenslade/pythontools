@@ -133,13 +133,11 @@ export class GridLayer {
 
   setXAxesCenter(x) {
     const xCenter = this.yScale(x);
-    console.log(xCenter)
     this.svg.selectAll('g > .x-axis').attr("transform", `translate(0, ${xCenter})`);
   }
 
   setYAxesCenter(y) {
     const yCenter = this.xScale(y);
-    console.log(yCenter)
     this.svg.selectAll('g > .y-axis').attr("transform", `translate(${yCenter}, 0)`);
   }
 
@@ -547,6 +545,6 @@ export function DebugPosition(gridLayer) {
       const clickedY = gridLayer.yScale.invert(coords[1]);
 
       // Log the output
-      console.log(`X: ${clickedX.toFixed(2)}\nY: ${clickedY.toFixed(2)}`);
+      console.log(`X: ${clickedX.toFixed(4)}\nY: ${clickedY.toFixed(4)}`);
     })
 }

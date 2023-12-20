@@ -45,7 +45,7 @@ function dydt(t, state, kwargs) {
         derivatives[baseIndex] = xVel;
         derivatives[baseIndex + 1] = yVel;
         derivatives[baseIndex + 2] = 0;
-        derivatives[baseIndex + 3] = 0;
+        derivatives[baseIndex + 3] = -0.1;
     }
     return derivatives;
 }
