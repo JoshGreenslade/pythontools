@@ -8,6 +8,11 @@ import {
     verlet
 } from './integrators.js'
 
+import {
+    closestPointOnLine,
+    checkLinesCollide
+} from './maths.js'
+
 // ====================================
 // ========== Partice System ==========
 // ====================================
@@ -16,7 +21,7 @@ import {
 export class ParticleSystem {
     constructor(
         integrator = verlet,
-        timestep = 0.005
+        timestep = 0.05
     ) {
         this.dynamicEntities = []
         this.state = []
@@ -86,7 +91,7 @@ export class ParticleSystem {
                     continue
                 }
                 if (objectA.collider.collideWith(objectB.collider)) {
-                    console.log("Dynamic Colliding!")
+                    this._collideDynamicObjects(objectA, objectB)
                 }
             }
 
@@ -96,10 +101,85 @@ export class ParticleSystem {
                     continue
                 }
                 if (objectA.collider.collideWith(objectC.collider)) {
-                    console.log("Static Colliding!")
+                    this._collideStaticObjects(objectA, objectC)
                 }
             }
         }
+    }
+
+    _collideDynamicObjects(objectA, objectB) {
+        // Get the distance, normal vector, and tangent vector 
+        // for the collision.
+        let dx = (objectB.x - objectA.x)
+        let dy = (objectB.y - objectA.y)
+        let dist2 = dx ** 2 + dy ** 2
+        let dist = Math.sqrt(dist2)
+        let norm = [dx / dist, dy / dist]
+        let tan = [-norm[1], norm[0]]
+
+        // Don't collide if the particles are moving away from one-another
+        let relVelX = objectB.xVel - objectA.xVel;
+        let relVelY = objectB.yVel - objectA.yVel;
+        let relVelDotNorm = relVelX * norm[0] + relVelY * norm[1];
+        if (relVelDotNorm > 0) {
+            return;
+        }
+        // Calculate the tangential and normal final velocities
+        let aVelTan = objectA.xVel * tan[0] + objectA.yVel * tan[1]
+        let bVelTan = objectB.xVel * tan[0] + objectB.yVel * tan[1]
+        let aVelNorm = objectA.xVel * norm[0] + objectA.yVel * norm[1]
+        let bVelNorm = objectB.xVel * norm[0] + objectB.yVel * norm[1]
+        let aFinalVelNorm = ((objectA.mass - objectB.mass) * aVelNorm + 2 * objectB.mass * bVelNorm) / (objectA.mass + objectB.mass);
+        let bFinalVelNorm = ((objectB.mass - objectA.mass) * bVelNorm + 2 * objectA.mass * aVelNorm) / (objectA.mass + objectB.mass);
+
+        // Update particle velocities
+        objectA.xVel = tan[0] * aVelTan + norm[0] * aFinalVelNorm
+        objectA.yVel = tan[1] * aVelTan + norm[1] * aFinalVelNorm
+        objectB.xVel = tan[0] * bVelTan + norm[0] * bFinalVelNorm
+        objectB.yVel = tan[1] * bVelTan + norm[1] * bFinalVelNorm
+    }
+
+    _collideStaticObjects(objectA, objectB) {
+        // Get the distance, normal vector, and tangent vector 
+        // for the collision.
+        let ax, ay, bx, by
+
+        if (objectA.collider instanceof CircleCollider) {
+            ax = objectA.x
+            ay = objectA.y
+        }
+        if (objectB.collider instanceof CircleCollider) {
+            bx = objectB.x
+            by = objectB.y
+        }
+        if (objectB.collider instanceof LineCollider) {
+            [bx, by] = closestPointOnLine(objectB.x, objectB.y,
+                objectB.collider.x2, objectB.collider.y2,
+                ax, ay)
+        }
+
+        let dx = (bx - ax)
+        let dy = (by - ay)
+        let dist2 = dx ** 2 + dy ** 2
+        let dist = Math.sqrt(dist2)
+        let norm = [dx / dist, dy / dist]
+        let tan = [-norm[1], norm[0]]
+
+        // Don't collide if the particles are moving away from one-another
+        let relVelX = - objectA.xVel;
+        let relVelY = - objectA.yVel;
+        let relVelDotNorm = relVelX * norm[0] + relVelY * norm[1];
+        if (relVelDotNorm > 0) {
+            return;
+        }
+        // Calculate the tangential and normal final velocities
+        let aVelTan = objectA.xVel * tan[0] + objectA.yVel * tan[1]
+        let aVelNorm = objectA.xVel * norm[0] + objectA.yVel * norm[1]
+        let aFinalVelNorm = -aVelNorm
+
+        // Update particle velocities
+        objectA.xVel = tan[0] * aVelTan + norm[0] * aFinalVelNorm
+        objectA.yVel = tan[1] * aVelTan + norm[1] * aFinalVelNorm
     }
 
     updateState() {
@@ -129,12 +209,6 @@ class Collider {
     }
 }
 
-export class NonCollider extends Collider {
-    // NonCollider doesn't collide
-    collideWith(otherCollider) {
-        return false
-    }
-}
 
 export class AxisAlignedBoundaryBoxCollider extends Collider {
     constructor({
@@ -165,12 +239,161 @@ export class AxisAlignedBoundaryBoxCollider extends Collider {
 
         // Check for y overlap
         if (Math.max(this.parent.y + this.offsetY,
-            otherAABB.parent.y + otherAABB.offsetY) > Math.min(this.parent.y + this.offsetY + this.width,
-                otherAABB.parent.y + otherAABB.width + otherAABB.offsetY)) {
+            otherAABB.parent.y + otherAABB.offsetY) > Math.min(this.parent.y + this.offsetY + this.height,
+                otherAABB.parent.y + otherAABB.height + otherAABB.offsetY)) {
             return false;
         }
 
         return true
+    }
+
+    collideWithCircle(otherCircleCollider) {
+        let xl = this.parent.x + this.offsetX
+        let xr = this.parent.x + this.offsetX + this.width
+        let yb = this.parent.y + this.offsetY
+        let yt = this.parent.y + this.offsetY + this.height
+
+        // Broad phase
+        if (otherCircleCollider.parent.y - otherCircleCollider.radius > yt ||
+            otherCircleCollider.parent.y + otherCircleCollider.radius < yb ||
+            otherCircleCollider.parent.x - otherCircleCollider.radius > xr ||
+            otherCircleCollider.parent.x + otherCircleCollider.radius < xl) {
+            return false
+        }
+
+        // Narrow Phase
+        let [cx, cy] = closestPointOnLine(xr, yb, xr, yt,
+            otherCircleCollider.parent.x,
+            otherCircleCollider.parent.y)
+        let dx2 = (cx - otherCircleCollider.parent.x) ** 2
+        let dy2 = (cy - otherCircleCollider.parent.y) ** 2
+        if (dx2 + dy2 < otherCircleCollider.radius ** 2) {
+            return true
+        }
+
+        [cx, cy] = closestPointOnLine(xl, yt, xr, yt,
+            otherCircleCollider.parent.x,
+            otherCircleCollider.parent.y)
+        dx2 = (cx - otherCircleCollider.parent.x) ** 2
+        dy2 = (cy - otherCircleCollider.parent.y) ** 2
+        if (dx2 + dy2 < otherCircleCollider.radius ** 2) {
+            return true
+        }
+
+        [cx, cy] = closestPointOnLine(xl, yb, xl, yt,
+            otherCircleCollider.parent.x,
+            otherCircleCollider.parent.y)
+        dx2 = (cx - otherCircleCollider.parent.x) ** 2
+        dy2 = (cy - otherCircleCollider.parent.y) ** 2
+        if (dx2 + dy2 < otherCircleCollider.radius ** 2) {
+            return true
+        }
+
+        [cx, cy] = closestPointOnLine(xl, yb, xr, yb,
+            otherCircleCollider.parent.x,
+            otherCircleCollider.parent.y)
+        dx2 = (cx - otherCircleCollider.parent.x) ** 2
+        dy2 = (cy - otherCircleCollider.parent.y) ** 2
+        if (dx2 + dy2 < otherCircleCollider.radius ** 2) {
+            return true
+        }
+
+        return false
+    }
+
+    collideWithLine(otherLineCollider) {
+        throw new Error("Not implemented");
+    }
+}
+
+export class CircleCollider extends Collider {
+    constructor({
+        radius,
+        offsetX = 0,
+        offsetY = 0
+    }) {
+        super()
+        this.radius = radius
+        this.offsetX = offsetX
+        this.offsetY = offsetY
+        this.parent = null
+    }
+
+    collideWith(otherCollider) {
+        return otherCollider.collideWithCircle(this);
+    }
+
+    collideWithCircle(otherCircleCollider) {
+        let dx = (this.parent.x - otherCircleCollider.parent.x)
+        let dy = (this.parent.y - otherCircleCollider.parent.y)
+        let dist2 = dx ** 2 + dy ** 2
+        if (dist2 >= (this.radius + otherCircleCollider.radius) ** 2) {
+            return false
+        }
+        return true
+    }
+
+    collideWithLine(otherLineCollider) {
+        let [cx, cy] = closestPointOnLine(otherLineCollider.parent.x,
+            otherLineCollider.parent.y,
+            otherLineCollider.x2,
+            otherLineCollider.y2,
+            this.parent.x,
+            this.parent.y
+        )
+        let dx2 = (cx - this.parent.x) ** 2
+        let dy2 = (cy - this.parent.y) ** 2
+        if (dx2 + dy2 <= this.radius ** 2) {
+            return true
+        }
+        return false
+    }
+
+    collideWithAABB(otherAABB) {
+        return otherAABB.collideWithCircle(this)
+    }
+
+}
+
+export class LineCollider extends Collider {
+    constructor({
+        x2,
+        y2,
+        offsetX = 0,
+        offsetY = 0
+    }) {
+        super()
+        this.x2 = x2
+        this.y2 = y2
+        this.offsetX = offsetX
+        this.offsetY = offsetY
+        this.parent = null
+    }
+
+    collideWith(otherCollider) {
+        return otherCollider.collideWithLine(this);
+    }
+
+    collideWithLine(otherLineCollider) {
+        if (checkLinesCollide(this.parent.x,
+            this.parent.y,
+            this.x2,
+            this.y2,
+            otherLineCollider.parent.x,
+            otherLineCollider.parent.y,
+            otherLineCollider.x2,
+            otherLineCollider.y2)) {
+            return true
+        }
+        return false
+    }
+
+    collideWithCircle(otherCircleCollider) {
+        return otherCircleCollider.collideWithLine(this)
+    }
+
+    collideWithAABB(otherAABB) {
+        return otherAABB.collideWithLine(this)
     }
 }
 
@@ -179,109 +402,25 @@ export class AxisAlignedBoundaryBoxCollider extends Collider {
 // =============================
 
 
-//     handleCollisions() {
-//         // Handles collisions between particles which have collision.
-//         // 
-//         // Assumes 2d solid spheres undergoing fully elastic collision.
-//         // Final velocities given here:
-//         // https://en.m.wikipedia.org/wiki/Elastic_collision
-//         // Overlapping particles are moved apart directly along the 
-//         // normal vector at the end of the collision.
-//         let aVelTan,
-//             bVelTan,
-//             aVelNorm,
-//             bVelNorm,
-//             aFinalVelNorm,
-//             bFinalVelNorm,
-//             relVelX,
-//             relVelY,
-//             relVelDotNorm,
-//             overlap,
-//             particleA,
-//             particleB,
-//             dx,
-//             dy,
-//             dist2,
-//             dist,
-//             norm,
-//             tan,
-//             totalRadius,
-//             moveA,
-//             moveB
-//         for (let i = 0; i < this.particles.length; i++) {
-//             particleA = this.particles[i]
-
-//             if (!particleA.canCollide) {
-//                 continue
-//             }
-
-//             for (let j = i + 1; j < this.particles.length; j++) {
-//                 particleB = this.particles[j]
-
-//                 if (!particleB.canCollide) {
-//                     continue
-//                 }
-
-//                 // Ensure the particles are colliding
-//                 dx = (particleB.x - particleA.x)
-//                 dy = (particleB.y - particleA.y)
-//                 dist2 = dx ** 2 + dy ** 2
-//                 if (dist2 >= (particleA.radius + particleB.radius) ** 2) {
-//                     continue
-//                 }
-
-//                 // Get the distance, normal vector, and tangent vector 
-//                 // for the collision.
-//                 dist = Math.sqrt(dist2)
-//                 norm = [dx / dist, dy / dist]
-//                 tan = [-norm[1], norm[0]]
-
-//                 // Don't collide if the particles are moving away from one-another
-//                 relVelX = particleB.xVel - particleA.xVel;
-//                 relVelY = particleB.yVel - particleA.yVel;
-//                 relVelDotNorm = relVelX * norm[0] + relVelY * norm[1];
-//                 if (relVelDotNorm > 0) {
-//                     continue;
-//                 }
-
-//                 // Calculate the tangential and normal final velocities
-//                 aVelTan = particleA.xVel * tan[0] + particleA.yVel * tan[1]
-//                 bVelTan = particleB.xVel * tan[0] + particleB.yVel * tan[1]
-//                 aVelNorm = particleA.xVel * norm[0] + particleA.yVel * norm[1]
-//                 bVelNorm = particleB.xVel * norm[0] + particleB.yVel * norm[1]
-//                 aFinalVelNorm = ((particleA.mass - particleB.mass) * aVelNorm + 2 * particleB.mass * bVelNorm) / (particleA.mass + particleB.mass);
-//                 bFinalVelNorm = ((particleB.mass - particleA.mass) * bVelNorm + 2 * particleA.mass * aVelNorm) / (particleA.mass + particleB.mass);
-
-//                 // Update particle velocities
-//                 particleA.xVel = tan[0] * aVelTan + norm[0] * aFinalVelNorm
-//                 particleA.yVel = tan[1] * aVelTan + norm[1] * aFinalVelNorm
-//                 particleB.xVel = tan[0] * bVelTan + norm[0] * bFinalVelNorm
-//                 particleB.yVel = tan[1] * bVelTan + norm[1] * bFinalVelNorm
-
-//                 // Handle overlapping particles and move them apart
-//                 // overlap = (particleA.radius + particleB.radius) - dist;
-//                 // if (overlap > 0) {
-//                 //     totalRadius = particleA.radius + particleB.radius;
-//                 //     moveA = (overlap * (particleB.radius / totalRadius));
-//                 //     moveB = (overlap * (particleA.radius / totalRadius));
-
-//                 //     particleA.x -= moveA * norm[0];
-//                 //     particleA.y -= moveA * norm[1];
-//                 //     particleB.x += moveB * norm[0];
-//                 //     particleB.y += moveB * norm[1];
-//                 // }
-//             }
-//         }
-//     }
-
 export class Entity2D {
-
+    constructor({
+        x = 0,
+        y = 0,
+        collider = null             // Collider
+    }) {
+        this.x = x
+        this.y = y
+        this.collider = collider
+        if (this.collider) {
+            this.collider.parent = this
+        }
+    }
 }
 
-export class Particle2D {
+export class Particle2D extends Entity2D {
     constructor({
-        x = 0,                      // Float
-        y = 0,                      // Float
+        x = 0,
+        y = 0,
         xVel = 0,                   // Float
         yVel = 0,                   // Float
         xAcc = 0,                   // Float
@@ -303,8 +442,11 @@ export class Particle2D {
         // })
         // particle.applyForce(10, 0)
         // particle.update(1.0)
-        this.x = x
-        this.y = y
+        super({
+            x: x,
+            y: y,
+            collider: collider
+        })
         this.xVel = xVel
         this.yVel = yVel
         this.xAcc = xAcc
@@ -313,10 +455,6 @@ export class Particle2D {
         this.radius = radius
 
         // 
-        this.collider = collider
-        if (this.collider) {
-            this.collider.parent = this
-        }
     }
 
     applyForce(

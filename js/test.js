@@ -4,7 +4,10 @@ import {
 import {
     ParticleSystem,
     Particle2D,
-    AxisAlignedBoundaryBoxCollider
+    Entity2D,
+    AxisAlignedBoundaryBoxCollider,
+    CircleCollider,
+    LineCollider
 } from './physics.js'
 
 import {
@@ -24,9 +27,9 @@ var svg = createSVG(".area", width, height)
 
 const gridLayer = new GridLayer(svg, {
     height: height,
-    xDomain: [0, 1],
+    xDomain: [-1, 1],
     xRange: [0, width],
-    yDomain: [0, 1],
+    yDomain: [0, 2],
     yRange: [height, 0],
     margin: margin
 })
@@ -35,7 +38,7 @@ gridLayer.setYAxesCenter(0)
 gridLayer.setXAxesCenter(0)
 
 const lineLayer = new LineLayer(svg, gridLayer)
-let dt = 0.005
+let dt = 0.001
 
 let particleManager = new ParticleSystem()
 
@@ -50,25 +53,22 @@ function dydt(t, state, kwargs) {
         derivatives[baseIndex] = xVel;
         derivatives[baseIndex + 1] = yVel;
         derivatives[baseIndex + 2] = 0;
-        derivatives[baseIndex + 3] = -0.5;
+        derivatives[baseIndex + 3] = -1;
     }
     return derivatives;
 }
 
 let lines = [];
-let radius = 0.01
+
 let particle = new Particle2D({
     mass: 1,
-    radius: radius,
-    x: Math.random(),
-    y: 0.9,
-    xVel: 0.1,
+    radius: 0.1,
+    x: -0.9,
+    y: 1.1,
+    xVel: 0,
     yVel: 0,
-    collider: new AxisAlignedBoundaryBoxCollider({
-        offsetX: -radius,             // Attaching to a dynamic object assumes relative position
-        offsetY: -0.9,
-        width: 2 * radius,
-        height: 1
+    collider: new CircleCollider({
+        radius: 0.1
     })
 })
 particleManager.addDynamicObject(particle)
@@ -77,33 +77,35 @@ lines.push(lineLayer.add({
     color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
     strokeWidth: -1,
     markerSize: Math.abs(gridLayer.yScale(0) - gridLayer.yScale(particle.radius)),
-    // markerSize: 10,
     markerShadowSize: -1
 }))
 
-
-for (let i = 0; i < 500; i++) {
-
-    let particle2 = new Particle2D({
-        mass: 1,
-        radius: radius,
-        x: Math.random(),
-        y: Math.random(),
-        xVel: Math.random() - 0.5,
-        yVel: Math.random() - 0.5
+let diagWall = new Entity2D({
+    x: 0,
+    y: 0,
+    collider: new LineCollider({
+        x2: 1,
+        y2: 1
     })
-    particleManager.addDynamicObject(particle2)
-    lines.push(lineLayer.add({
-        data: [[particle2.x, particle2.y]],
-        color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
-        strokeWidth: -1,
-        markerSize: Math.abs(gridLayer.yScale(0) - gridLayer.yScale(particle2.radius)),
-        // markerSize: 10,
-        markerShadowSize: -1
-    }))
+})
+let diagWall2 = new Entity2D({
+    x: 0,
+    y: 0,
+    collider: new LineCollider({
+        x2: -1,
+        y2: 1
+    })
+})
 
-}
-
+lines.push(lineLayer.add({
+    data: [[diagWall2.collider.x2, diagWall2.collider.y2], [diagWall2.x, diagWall2.y], [diagWall.collider.x2, diagWall.collider.y2]],
+    color: `hsl(${(Math.random() * 360)}, 50%, 50%)`,
+    strokeWidth: 2,
+    markerSize: -1,
+    markerShadowSize: -1
+}))
+particleManager.addStaticObject(diagWall)
+particleManager.addStaticObject(diagWall2)
 
 DebugPosition(gridLayer)
 
@@ -116,10 +118,4 @@ var interval = d3.interval(() => {
             data: [[particle.x, particle.y]],
         })
     }
-    // lines[2].update({
-    //     data: [[particle2.x + particle2.collider.offsetX, 0.5], [particle2.x + particle2.collider.width + particle2.collider.offsetX, 0.5]],
-    // })
-    lines[2].update({
-        data: [[particle.x + particle.collider.offsetX, 0.5], [particle.x + particle.collider.width + particle.collider.offsetX, 0.5]],
-    })
 })

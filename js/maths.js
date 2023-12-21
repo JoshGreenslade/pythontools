@@ -3,6 +3,55 @@
 // A suite of tools and utilities for mathematical
 // operations.
 
+// =====================================
+// ========== Collision Tools ==========
+// =====================================
+
+export function checkLinesCollide(x1, y1, x2, y2, x3, y3, x4, y4) {
+    let a1 = y2 - y1
+    let b1 = x2 - x1
+    let c1 = a1 * x1 + b1 * y1
+    let a2 = y4 - y3
+    let b2 = x4 - x3
+    let c2 = a2 * x3 + b2 * y3
+    let det = a1 * b2 - a2 * b1
+    if (det === 0) {
+        return null
+    }
+    let x = (b2 * c1 - b1 * c2) / det;
+    let y = (a1 * c2 - a2 * c1) / det;
+    if (x >= Math.min(x1, x2) &&
+        x <= Math.max(x1, x2) &&
+        x >= Math.min(x3, x4) &&
+        x <= Math.max(x3, x4) &&
+        y >= Math.min(y1, y2) &&
+        y <= Math.max(y1, y2) &&
+        y >= Math.min(y3, y4) &&
+        y <= Math.max(y3, y4)) {
+        return [x, y]
+    } else {
+        return null
+    }
+}
+
+export function closestPointOnLine(x1, y1, x2, y2, x, y) {
+    let a1 = y2 - y1
+    let b1 = x1 - x2
+    let c1 = a1 * x1 + b1 * y1
+    let c2 = -b1 * x + a1 * y
+    let det = a1 * a1 - -b1 * b1
+    let cx = 0
+    let cy = 0
+    if (det !== 0) {
+        cx = (a1 * c1 - b1 * c2) / det
+        cy = (a1 * c2 - -b1 * c1) / det
+    } else {
+        cx = x
+        cy = y
+    }
+    return [cx, cy]
+}
+
 // =========================================
 // ========== SIMPLE MATRIX TOOLS ==========
 // =========================================
