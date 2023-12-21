@@ -21,7 +21,7 @@ import {
 export class ParticleSystem {
     constructor(
         integrator = verlet,
-        timestep = 0.05
+        timestep = 0.008
     ) {
         this.dynamicEntities = []
         this.state = []
@@ -341,6 +341,12 @@ export class CircleCollider extends Collider {
             this.parent.x,
             this.parent.y
         )
+        // Ensure point is on the segmeant
+        if (cx > Math.max(otherLineCollider.parent.x, otherLineCollider.x2) ||
+            cx < Math.min(otherLineCollider.parent.x, otherLineCollider.x2)) {
+            return false
+        }
+
         let dx2 = (cx - this.parent.x) ** 2
         let dy2 = (cy - this.parent.y) ** 2
         if (dx2 + dy2 <= this.radius ** 2) {

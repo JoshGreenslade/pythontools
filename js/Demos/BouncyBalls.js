@@ -68,7 +68,6 @@ particleManager.update = (dt) => {
         n_steps: 1
     })
     let newState = result[1].at(-1)
-    console.log(result)
     for (let i = 0; i < self.particles.length; i++) {
         let baseIndex = i * 4;
         let particle = self.particles[i]
