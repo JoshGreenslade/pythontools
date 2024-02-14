@@ -220,7 +220,7 @@ class Line {
     this.color = color || this.generateColor()
     this.strokeWidth = strokeWidth || 0
     this.marker = marker || 'circle'
-    this.markerSize = markerSize || 0
+    this.markerSize = (this.lineLayer.gridLayer.yScale(0) - this.lineLayer.gridLayer.yScale(markerSize)) || 0
     this.markerShadowSize = markerShadowSize || 1.5 * this.markerSize
     this.id = `LineID-${Math.random().toString(36).substr(2, 9)}`;  // Generating a random ID for the line
 
@@ -310,7 +310,7 @@ class Line {
   }) {
 
     if (data !== null) {
-      this.data = this.lineLayer.transform(data)
+      this.data = data
     }
     if (strokeWidth !== null) {
       this.strokeWidth = strokeWidth
@@ -547,4 +547,45 @@ export function DebugPosition(gridLayer) {
       // Log the output
       console.log(`X: ${clickedX.toFixed(4)}\nY: ${clickedY.toFixed(4)}`);
     })
+}
+
+export class FramerateDisplay {
+  constructor() {
+      this.lastFrameTime = performance.now();
+      this.averageOverFrames = 20
+      this.storedFrameTimes = []
+      this.initDisplay();
+  }
+
+  initDisplay() {
+      // Create the framerate display textbox and append it to the body
+      this.framerateDisplay = document.createElement('div');
+      this.framerateDisplay.style.position = 'fixed';
+      this.framerateDisplay.style.top = '10px';
+      this.framerateDisplay.style.left = '10px';
+      this.framerateDisplay.style.color = 'white';
+      this.framerateDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      this.framerateDisplay.style.border = '1px solid white';
+      this.framerateDisplay.style.padding = '5px';
+      this.framerateDisplay.style.borderRadius = '5px';
+      this.framerateDisplay.style.zIndex = '1000'; // Ensure it's above other elements
+      document.body.appendChild(this.framerateDisplay);
+      
+      this.updateFrameRate();
+  }
+
+  updateFrameRate() {
+      const now = performance.now();
+      const deltaTime = now - this.lastFrameTime;
+      const fps = 1000.0 / (deltaTime); // Convert delta time to seconds and calculate FPS
+      this.storedFrameTimes.push(fps)
+      // Ensure we only keep the last N timestamps
+      if (this.storedFrameTimes.length == this.averageOverFrames){
+        this.framerateDisplay.textContent = `FPS: ${fps.toFixed(2)}`; // Update the display, rounded to 1 decimal place
+        this.storedFrameTimes = []
+      }
+
+      this.lastFrameTime = now;
+      requestAnimationFrame(this.updateFrameRate.bind(this)); // Continue the loop
+  }
 }
