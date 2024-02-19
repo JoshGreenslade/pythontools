@@ -66,7 +66,7 @@ export class Vector2D {
     }
 
     static divide(vector, float) {
-        return new Vector2D(vector.X / float, vectorA / float);
+        return new Vector2D(vector.X / float, vector.Y / float);
     }
 
     set(x, y){
