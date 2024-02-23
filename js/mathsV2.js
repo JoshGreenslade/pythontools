@@ -45,6 +45,25 @@ export class MathV2D {
     {
         return vectorA.X * vectorB.Y - vectorA.Y * vectorB.X
     }
+
+    static findMean(vectors)
+    {
+        let sumX = 0;
+        let sumY = 0;
+        for (let i=0; i < vectors.length; i++)
+        {
+            let v = vectors[i];
+            sumX += v.X;
+            sumY += v.Y;
+        }
+
+        return new Vector2D(sumX / vectors.length, sumY / vectors.length);
+    }
+}
+
+export function transform2D(position, angle)
+{
+
 }
 
 export class Vector2D {
@@ -67,6 +86,16 @@ export class Vector2D {
 
     static divide(vector, float) {
         return new Vector2D(vector.X / float, vector.Y / float);
+    }
+
+    static transform(vector, position, angle){
+        let cos = Math.cos(angle)
+        let sin = Math.sin(angle)
+        let v = new Vector2D(
+            ((cos * vector.X) - (sin * vector.Y)) + position.X,
+            ((sin * vector.X) + (cos * vector.Y)) + position.Y
+        )
+        return v
     }
 
     set(x, y){

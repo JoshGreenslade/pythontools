@@ -216,7 +216,7 @@ class Line {
     this.lineGroup = lineLayer.lineGroup
     this.negMarkerGroup = lineLayer.negMarkerGroup
     this.markerGroup = lineLayer.markerGroup
-    this.data = lineLayer.transform(data)
+    this.data = data
     this.color = color || this.generateColor()
     this.strokeWidth = strokeWidth || 0
     this.marker = marker || 'circle'
@@ -351,10 +351,6 @@ export class LineLayer {
     this.negMarkerGroup = svg.append('g')
     this.markerGroup = svg.append('g')
     this.currentHue = -190
-
-    // 3D rotations
-    this.zRotation = 45
-    this.xRotation = 10
   }
 
   add(config) {
@@ -367,165 +363,94 @@ export class LineLayer {
       markerShadowSize: config.markerShadowSize
     })
   }
-
-  project3Dto2D(data) {
-    // Transforms data from 3D to 2D
-    // Can be overridden
-    const data2d = data.map((inputPoint) => {
-
-      let point = [[inputPoint[0]], [inputPoint[1]], [inputPoint[2]]];
-      // 45 degrees rotation around the X-axis
-      let rotationX = get3DRotationMatrixX(-90 * Math.PI / 180);
-      let rotatedAroundX = multiplyMatrices(rotationX, point);
-
-      // 45 degrees rotation around the Z-axis
-      let rotationZ = get3DRotationMatrixY(this.zRotation * Math.PI / 180);
-      let rotatedAroundZ = multiplyMatrices(rotationZ, rotatedAroundX);
-
-      let rotation3 = get3DRotationMatrixX(this.xRotation * Math.PI / 180);
-      let rotated3 = multiplyMatrices(rotation3, rotatedAroundZ);
-
-      return [rotated3[0][0], rotated3[1][0]];
-    })
-
-    return data2d
-  }
-
-  transform(data) {
-    // Ensure there is data
-    if (data.length === 0) {
-      return data
-    }
-    const dimensions = [data.length, data[0].length]
-    // 2D points are not transformed
-    if (dimensions[1] === 2) {
-      return data
-    }
-    // 3D points are projected down to 2D using transformData
-    else if (dimensions[1] === 3) {
-      return this.project3Dto2D(data)
-    }
-  }
 }
 
+// ==================================
+// ============ Polygons ============
+// ==================================
 
-// =======================================
-// ========== 3D Plotting Tools ==========
-// =======================================
 
-export class Grid {
-
-  constructor(gridLayer, lineLayer, {
-    linesPerSide = 10,
-    XExtent = gridLayer.XDomain,
-    YExtent = gridLayer.YDomain,
-    markerSize = 0,
-    markerShadowSize = 0,
-    strokeWidth = 1,
-    gridColor = `hsl(0, 0%, 50%)`
+class Polygon {
+  constructor(polygonLayer, {
+    data,
+    color = null,
+    strokeWidth = null,
   }) {
-    this.gridLayer = gridLayer
-    this.lineLayer = lineLayer
-    this.linesPerSide = linesPerSide
-    this.XExtent = XExtent
-    this.YExtent = YExtent
-    this.markerSize = markerSize
-    this.markerShadowSize = markerShadowSize
-    this.strokeWidth = strokeWidth
-    this.gridColor = gridColor
-    this.data = this._mapLinesPerSideToGrid()
-    this._horizontalLineData = this._getHorizontalLineData()
-    this._verticalLineData = this._getVerticalLineData()
-    this._lines = []
+    this.polygonLayer = polygonLayer
+    this.polygonGroup = polygonLayer.polygonGroup
+    this.data = data
+    this.color = color || this.generateColor()
+    this.strokeWidth = strokeWidth || 0
+    this.id = `PolygonID-${Math.random().toString(36).substr(2, 9)}`;  // Generating a random ID for the line
 
-    this._createInitialLines()
-
+    this.draw()
   }
 
-  _mapLinesPerSideToGrid() {
-    return Array(this.linesPerSide ** 2).fill(1)
-      .map((_, i) => {
-        let x = this.XExtent[0] + (i % this.linesPerSide) * (this.XExtent[1] - this.XExtent[0]) / (this.linesPerSide - 1)
-        let y = this.YExtent[0] + Math.floor(i / this.linesPerSide) * (this.YExtent[1] - this.YExtent[0]) / (this.linesPerSide - 1)
-        return [x, y]
-      })
-  }
-
-  _getHorizontalLineData() {
-    let horizontalLines = [];
-    // Creating horizontal lines
-    for (let row = 0; row < this.linesPerSide; row++) {
-      let lineSegment = [];
-      for (let col = 0; col < this.linesPerSide; col++) {
-        let pointIndex = row * this.linesPerSide + col;
-        lineSegment.push(this.data[pointIndex]);
-      }
-      horizontalLines.push(lineSegment)
-    }
-    return horizontalLines
-  }
-
-  _getVerticalLineData() {
-    let verticalLines = [];
-    // Creating vertical lines
-    for (let col = 0; col < this.linesPerSide; col++) {
-      let lineSegment = [];
-      for (let row = 0; row < this.linesPerSide; row++) {
-        let pointIndex = row * this.linesPerSide + col;
-        lineSegment.push(this.data[pointIndex]);
-      }
-      verticalLines.push(lineSegment)
-    }
-    return verticalLines
-  }
-
-  _createInitialLines() {
-    for (let i = 0; i < this.linesPerSide; i++) {
-      this._lines.push(
-        this.lineLayer.add({
-          data: this.lineLayer.transform(this._horizontalLineData[i]),
-          color: this.gridColor,
-          strokeWidth: this.strokeWidth,
-          markerSize: this.markerSize,
-          markerShadowSize: this.markerShadowSize
-        })
+  draw() {
+    let xScale = this.polygonLayer.gridLayer.xScale;
+    let yScale = this.polygonLayer.gridLayer.yScale;
+    // Ensure the id attribute is set for each polygon
+    this.polygonGroup.selectAll(`polygon#${this.id}`)
+      .data([this.data]) // Use a key function to bind data by id
+      .join(
+        enter => enter
+          .append("polygon")
+          .attr("id", this.id) // Ensure the id is correctly applied
+          .attr("stroke", "white")
+          .attr("stroke-width", this.strokeWidth)
+          .attr("fill", this.color),
+        update => update
+          .attr("stroke-width", this.strokeWidth)
+          .attr("fill", this.color),
+        exit => exit.remove()
       )
-      this._lines.push(
-        this.lineLayer.add({
-          data: this.lineLayer.transform(this._verticalLineData[i]),
-          color: this.gridColor,
-          strokeWidth: this.strokeWidth,
-          markerSize: this.markerSize,
-          markerShadowSize: this.markerShadowSize
-        })
-      )
-    }
+      .attr("points", this.data[0].map(p => [xScale(p.X), yScale(p.Y)].join(" ")).join(",")
+      );
   }
-
-  _updateLines() {
-    this._horizontalLineData = this._getHorizontalLineData()
-    this._verticalLineData = this._getVerticalLineData()
-    for (let i = 0; i < this.linesPerSide; i++) {
-      this._lines[2 * i].update({
-        data: this.lineLayer.transform(this._horizontalLineData[i])
-      })
-      this._lines[2 * i + 1].update({
-        data: this.lineLayer.transform(this._verticalLineData[i])
-      })
-    }
-  }
+  
 
   update({
     data = null,
-  }) {
+    color = null,
+    strokeWidth = null
+    }) {
 
-    if ((data !== null)) {
-      if (data !== null) {
-        this.data = data
-      }
-      this._updateLines()
+    if (data !== null) {
+      this.data = data
+    }
+    if (strokeWidth !== null) {
+      this.strokeWidth = strokeWidth
+      this.polygonSelection.attr("stroke-width", this.strokeWidth)
+    }
+    if (color !== null) {
+      this.color = color
+      this.polygonSelection.attr("fill", this.color)
     }
 
+    this.draw()
+  }
+
+  generateColor() {
+    this.polygonLayer.currentHue = (this.polygonLayer.currentHue + 90) % 360
+    return `hsl(${this.polygonLayer.currentHue}, 50%, 50%)`;
+  }
+}
+
+export class PolygonLayer {
+
+  constructor(svg, gridLayer) {
+    this.svg = svg
+    this.gridLayer = gridLayer
+    this.polygonGroup = svg.append('g')
+    this.currentHue = -190
+  }
+
+  add(config) {
+    return new Polygon(this, {
+      data: config.data,
+      color: config.color,
+      strokeWidth: config.strokeWidth
+    })
   }
 }
 
